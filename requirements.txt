@@ -1,0 +1,5 @@
+validators~=0.19.0
+PySimpleGUI~=4.60.1
+tvn~=0.0.1
+setuptools~=60.2.0
+vdf~=3.4c

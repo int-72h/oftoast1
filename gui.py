@@ -1,17 +1,9 @@
-# This is broken while we work on other things.
-
-import hashlib
-import lzma
-import argparse
 import os
-import json
 import validators
 import urllib.request
 import tempfile
 from steam import *
-from os import makedirs
-from itertools import starmap
-from pathlib import Path, PurePosixPath
+from pathlib import Path, PosixPath,WindowsPath
 import PySimpleGUI as sg
 from sys import exit
 from tvn import *
@@ -59,7 +51,7 @@ def gui_loop():
                 window["http_warning"].update(visible=False)
 
         if event == "folder":
-            revision = get_installed_revision(Path(values["folder"]))
+            revision = get_installed_revision(Path(values["folder"] / Path('open_fortress')))
             if revision >= 0:
                 window["installed_revision"].update(str(revision))
             else:

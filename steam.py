@@ -1,19 +1,33 @@
 import vdf
-from pathlib import Path,PosixPath,WindowsPath
-from sys import platform
+from pathlib import Path
+from sys import platform,exit
 from subprocess import run
 from shutil import rmtree
+import PySimpleGUI as sg
+if platform.startswith('win32'):
+    from winreg import *
 def getpath():
     if platform.startswith('linux'):
         target_path = Path.home() / Path('.steam/steam/steamapps/sourcemods/open_fortress')
     elif platform.startswith('win32'):
-        target_path = Path('C:/Program Files (x86)/Steam/steamapps/sourcemods/open_fortress')
+        try:
+            regkey = OpenKey(HKEY_LOCAL_MACHINE, "SOFTWARE\\Wow6432Node\\Valve\\Steam")
+        except FileNotFoundError:
+            try:
+                regkey = OpenKey(HKEY_LOCAL_MACHINE, "SOFTWARE\\Valve\\Steams")
+            except FileNotFoundError:
+                print("steam install not found...")
+                return -1
+        target_path = Path(QueryValueEx(regkey, "InstallPath")[0])
     else:
         print("you aren't on anything we support.")
         return -1
     if target_path.exists():
-        print("Old Open fortress installations aren't compatible with the new launcher. Deleting...")
-        #rmtree(target_path)
+        events = sg.Window("Old OF install detected", [[sg.T("Old Open fortress installations aren't compatible with the new launcher.")], [sg.B('OK',key='ok'),sg.B('Cancel')]]).read(close=True)
+        if events[0] == 'ok':
+            rmtree(target_path)
+        else:
+            exit()
     elif target_path.parents[0].exists():
         print('All good, carrying on')
     elif target_path.parents[1].exists():
