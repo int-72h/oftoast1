@@ -29,12 +29,19 @@ sg.LOOK_AND_FEEL_TABLE['MercPurple'] = {'BACKGROUND': '#443785',
 sg.theme('MercPurple')
 
 def get_revision(url: str, revision: int) -> list[Change]:
-	r = urllib.request.urlopen(url + "/" + str(revision), headers={'User-Agent': 'rei/0.0.1'}).read()
-	return json.loads(r)
+    r = urllib.request.urlopen(url + "/" + str(revision), headers={'User-Agent': 'rei/0.0.1'}).read()
+    return json.loads(r)
 
-def gui_loop(layout):
-    global font
-    window = sg.Window('OFtoast',layout,element_justification='c')
+def gui_loop():
+    ofpath = getpath()
+    if type(ofpath) == PosixPath or WindowsPath:
+        sdk_download(ofpath.parents[1])
+        revision = get_installed_revision(ofpath)
+        if revision >= 0:
+            layout[1][1] = sg.T(str(revision), key="installed_revision")
+        layout[2][0] = sg.T(str(ofpath), key="destination")
+
+    window = sg.Window('OFtoast', layout, element_justification='c')
     while True:
         event, values = window.read()
         if event == sg.WINDOW_CLOSED or event == "Cancel":
@@ -59,7 +66,7 @@ def gui_loop(layout):
                 window["installed_revision"].update("None")
 
             window["destination"].update(values["folder"])
-        
+
         if event == "Update":
             window["Update"].update(disabled=True)
             window["Cancel"].update(disabled=True)
@@ -85,7 +92,7 @@ def gui_loop(layout):
                     window['file'].Update(x["path"])
                     urllib.request.urlretrieve(values["url"] + "/objects/" + x["object"], temp_path / x["object"])
                 window.refresh()
-            
+
             try:
                 os.remove(game_path / ".revision")
             except FileNotFoundError:
@@ -97,7 +104,7 @@ def gui_loop(layout):
                     os.remove(game_path / x["path"])
                 except FileNotFoundError:
                     pass
-            
+
             window.refresh()
 
             for x in list(filter(lambda x: x["type"] == TYPE_MKDIR, changes)):
@@ -106,38 +113,26 @@ def gui_loop(layout):
                     os.mkdir(game_path / x["path"], 0o777)
                 except FileExistsError:
                     pass
-            
+
             window.refresh()
 
             for x in writes:
                 move(temp_path / x["object"], str(game_path) + "/" + x["path"])
-            
+
             (game_path / ".revision").touch(0o777)
             (game_path / ".revision").write_text(str(latest_revision))
 
             window["Update"].update(disabled=False)
             window["Cancel"].update(disabled=False)
             window["browse"].update(disabled=False)
-            
+
             window["Progress"].update(0)
             sg.Window('OFtoast',[[sg.T('Done!')],[sg.B('OK')]]).read(close=True)
             exit()
 
 
 def main():
-    ofpath = getpath()
-    if type(ofpath) == PosixPath or WindowsPath:
-        sdk_download(ofpath.parents[1])
-        layout = layout_nonpath
-    else:
-        layout = layout_path
-    global font
-    try:
-        #pyglet.font.add_file(r"./Staatliches-Regular.ttf")
-        font = ("Staatliches Regular",15)
-    except:
-        font = ("Liberation Sans",15)
-    gui_loop(layout)
+    gui_loop()
 
 
 
@@ -150,33 +145,30 @@ HTTPS-compatible site unless you know what you're doing.
 
 We are not responsible for any viruses or evil things
 that may happen if you ignore this warning."""
-layout_path =   [
+layout =   [
                                 [sg.Image(source=toast_image)],
                                 [
                                     sg.T('Installed Revision:'),
                                     sg.T('None', key="installed_revision")
                                 ],
                                 [
-                                    sg.T('File Destination',font=font, key="destination"),
+                                    sg.T('File Destination', key="destination"),
                                     sg.Input(key="folder", enable_events=True, visible=False),
-                                    sg.FolderBrowse(font=font, target="folder", key="browse"),
+                                    sg.FolderBrowse(target="folder", key="browse"),
                                 ],
                                 [sg.pin(sg.T(http_warning, visible=False, key="http_warning"))],
                                 [
                                     sg.Push(),
-                                    sg.T('Download URL',font=font),sg.I(key="url", enable_events=True)
+                                    sg.T('Download URL'),sg.I(key="url", enable_events=True)
                                 ],
                                 [
-                                    sg.B('Update',font=font,disabled=True,enable_events=True),
-                                    sg.B('Cancel',font=font,enable_events=True)
+                                    sg.B('Update',disabled=True,enable_events=True),
+                                    sg.B('Cancel',enable_events=True)
                                 ],
                                 [
                                     sg.ProgressBar(1, key="Progress")
                                 ],
                                 [sg.T('',key='file')]
                             ]
-
-layout_nonpath = layout_path
-layout_nonpath[2].pop(1)
 if __name__ == '__main__':
     main()
