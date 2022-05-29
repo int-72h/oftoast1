@@ -18,7 +18,7 @@ def getpath():
             except FileNotFoundError:
                 print("steam install not found...")
                 return -1
-        target_path = Path(QueryValueEx(regkey, "InstallPath")[0])
+        target_path = Path(QueryValueEx(regkey, "InstallPath")[0]) / Path('steamapps/sourcemods/open_fortress')
     else:
         print("you aren't on anything we support.")
         return -1
@@ -48,13 +48,13 @@ def sdk_download(path_to_steamapps):
         except KeyError:
             continue
     if not already_downloaded:
-        print("not installed!")
+        print("sdk 2013 not installed!")
         if platform.startswith('win32'):
             run(["start","steam://install/243750"])
         else:
             run(["xdg-open","steam://install/243750"])
     else:
-        print("already installed!")
+        print("sdk 2013 already installed!")
 
 
 #handle other inputs here

@@ -26,7 +26,7 @@ def get_revision(url: str, revision: int) -> list[Change]:
 
 def gui_loop():
     ofpath = getpath()
-    if type(ofpath) == PosixPath or WindowsPath:
+    if ofpath != -1:
         sdk_download(ofpath.parents[1])
         revision = get_installed_revision(ofpath)
         if revision >= 0:
