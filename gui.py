@@ -30,8 +30,8 @@ def gui_loop():
         sdk_download(ofpath.parents[1])
         revision = get_installed_revision(ofpath)
         if revision >= 0:
-            layout[1][1] = sg.T(str(revision), key="installed_revision")
-        layout[2][0] = sg.T(str(ofpath), key="destination")
+            layout[1][0] = sg.T('Installed Revision: ' + str(revision), key="installed_revision")
+        layout[2][1] = sg.T(str(ofpath), key="destination",background_color='#272727')
 
     window = sg.Window('OFtoast', layout, element_justification='c')
     while True:
@@ -53,9 +53,9 @@ def gui_loop():
         if event == "folder":
             revision = get_installed_revision(Path(values["folder"] / Path('open_fortress')))
             if revision >= 0:
-                window["installed_revision"].update(str(revision))
+                window["installed_revision"].update('Installed Revision: ' + str(revision))
             else:
-                window["installed_revision"].update("None")
+                window["installed_revision"].update('Installed Revision: ' + "None")
 
             window["destination"].update(values["folder"])
 
@@ -140,25 +140,25 @@ that may happen if you ignore this warning."""
 layout =   [
                                 [sg.Image(source=toast_image)],
                                 [
-                                    sg.T('Installed Revision:'),
-                                    sg.T('None', key="installed_revision")
+                                    sg.T('Installed Revision: None', key="installed_revision",background_color='#272727')
                                 ],
                                 [
-                                    sg.T('File Destination', key="destination"),
-                                    sg.Input(key="folder", enable_events=True, visible=False),
                                     sg.FolderBrowse(target="folder", key="browse"),
+                                    sg.T('File Destination', key="destination",background_color='#272727'),
+                                    sg.Input(key="folder", enable_events=True, visible=False,background_color='#272727')
+
                                 ],
-                                [sg.pin(sg.T(http_warning, visible=False, key="http_warning"))],
+                                [sg.pin(sg.T(http_warning, visible=False, key="http_warning",background_color='#272727'))],
                                 [
-                                    sg.Push(),
-                                    sg.T('Download URL'),sg.I(key="url", enable_events=True)
+                                    #sg.Push(),
+                                    sg.T('Download URL'),sg.I(default_text="https://www.openfortress.fun/toast/",key="url", enable_events=True)
                                 ],
                                 [
-                                    sg.B('Update',disabled=True,enable_events=True),
+                                    sg.B('Update',disabled=False,enable_events=True),
                                     sg.B('Cancel',enable_events=True)
                                 ],
                                 [
-                                    sg.ProgressBar(1, key="Progress")
+                                    sg.ProgressBar(1, key="Progress",size=(43,8),visible=True)
                                 ],
                                 [sg.T('',key='file')]
                             ]
