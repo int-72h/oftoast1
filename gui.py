@@ -22,19 +22,15 @@ sg.LOOK_AND_FEEL_TABLE['MercPurple'] = {'BACKGROUND': '#443785',
 sg.theme('MercPurple')
 
 
-def pbar_sg(iter,window,num_cpus=40,bar_length=80):
+def pbar_sg(iter,window,num_cpus=40):
     length = len(iter)
-    #layout = [[sg.Text('Downloading...'),sg.P(),sg.T(key='file')],
-    #          [sg.ProgressBar(max_value=length, orientation='h', size=(bar_length,20), key='progress')]]
-    #window = sg.Window('rei <3', layout, finalize=True)
-    #progress_bar = window['progress']
     file = window['file']
     pool = Pool(num_cpus)
     map_func = getattr(pool, 'uimap')
     z = 0
     for item,it in zip(map_func(lambda x:urllib.request.urlretrieve(x[0], x[1]), iter),iter):
         z = z+1
-        #file.update(it[1])
+        file.update(it[0])
         window["Progress"].UpdateBar(z, length)
         yield item
     pool.clear()
