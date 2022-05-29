@@ -32,9 +32,11 @@ def getpath():
             exit()
     elif target_path.parents[0].exists():
         print('All good, carrying on')
+        Path.mkdir(target_path)
     elif target_path.parents[1].exists():
         print('Generating sourcemods folder...')
         Path.mkdir(target_path.parents[0])
+        Path.mkdir(target_path)
     else:
         print("Ok something's wrong, put in your path manually")
         return -1
@@ -61,6 +63,4 @@ def sdk_download(path_to_steamapps):
                                [sg.B('OK', key='ok')]]).read(close=True)
     else:
         print("sdk 2013 already installed!")
-
-
 #handle other inputs here

@@ -4,6 +4,7 @@ import urllib.request
 import tempfile
 from steam import *
 from pathlib import Path, PosixPath,WindowsPath
+from pathos.multiprocessing import ProcessPool as Pool
 import PySimpleGUI as sg
 from sys import exit
 from tvn import *
@@ -20,10 +21,27 @@ sg.LOOK_AND_FEEL_TABLE['MercPurple'] = {'BACKGROUND': '#443785',
                                         'BORDER': 1, 'SLIDER_DEPTH': 0,'PROGRESS_DEPTH': 0, }
 sg.theme('MercPurple')
 
+
+def pbar_sg(iter,window,num_cpus=40,bar_length=80):
+    length = len(iter)
+    #layout = [[sg.Text('Downloading...'),sg.P(),sg.T(key='file')],
+    #          [sg.ProgressBar(max_value=length, orientation='h', size=(bar_length,20), key='progress')]]
+    #window = sg.Window('rei <3', layout, finalize=True)
+    #progress_bar = window['progress']
+    file = window['file']
+    pool = Pool(num_cpus)
+    map_func = getattr(pool, 'uimap')
+    z = 0
+    for item,it in zip(map_func(lambda x:urllib.request.urlretrieve(x[0], x[1]), iter),iter):
+        z = z+1
+        #file.update(it[1])
+        window["Progress"].UpdateBar(z, length)
+        yield item
+    pool.clear()
+
 def get_revision(url: str, revision: int) -> list[Change]:
     r = urllib.request.urlopen(url + "/" + str(revision), headers={'User-Agent': 'rei/0.0.1'}).read()
     return json.loads(r)
-
 def gui_loop():
     ofpath = getpath()
     if ofpath != -1:
@@ -32,10 +50,11 @@ def gui_loop():
         if revision >= 0:
             layout[1][0] = sg.T('Installed Revision: ' + str(revision), key="installed_revision")
         layout[2][1] = sg.T(str(ofpath), key="destination",background_color='#272727')
-
+        layout[2][2] = sg.Input(default_text=str(ofpath),key="folder", enable_events=True, visible=False,background_color='#272727')
     window = sg.Window('OFtoast', layout, element_justification='c')
     while True:
         event, values = window.read()
+        print(values)
         if event == sg.WINDOW_CLOSED or event == "Cancel":
             exit(1)
         if event == "url":
@@ -78,13 +97,8 @@ def gui_loop():
             writes = list(filter(lambda x: x["type"] == TYPE_WRITE, changes))
             window["Progress"].Update(visible=True)
             window["Progress"].UpdateBar(0,len(writes))
-            for x,y in zip(writes,range(0,len(writes))):
-                if x["type"] == TYPE_WRITE:
-                    window["Progress"].UpdateBar(y,len(writes))
-                    window['file'].Update(x["path"])
-                    urllib.request.urlretrieve(values["url"] + "/objects/" + x["object"], temp_path / x["object"])
-                window.refresh()
-
+            todl = [[values["url"] + "/objects/" + x["object"],temp_path / x["object"]] for x in writes]
+            x = [x for x in pbar_sg(todl,window)]
             try:
                 os.remove(game_path / ".revision")
             except FileNotFoundError:
@@ -107,10 +121,9 @@ def gui_loop():
                     pass
 
             window.refresh()
-
+            print(game_path)
             for x in writes:
                 move(temp_path / x["object"], str(game_path) + "/" + x["path"])
-
             (game_path / ".revision").touch(0o777)
             (game_path / ".revision").write_text(str(latest_revision))
 
