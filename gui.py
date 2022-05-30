@@ -1,11 +1,9 @@
 import os
-import validators
 import urllib.request
 import tempfile
 from steam import *
 from pathlib import Path, PosixPath,WindowsPath
 from pathos.multiprocessing import ProcessPool as Pool
-import PySimpleGUI as sg
 from sys import exit
 from tvn import *
 from shutil import move
@@ -194,15 +192,15 @@ def set_theme(app, MainWindow):
     icon.addPixmap(QtGui.QPixmap("toast.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
     MainWindow.setWindowIcon(icon)
     palette = QPalette()
-    palette.setColor(QPalette.Window, QColor("#403b76"))
-    palette.setColor(QPalette.WindowText, QColor(255, 255, 255))
-    palette.setColor(QPalette.Base, QColor("#27234d"))
+    palette.setColor(QPalette.Window, QColor('#584169'))
+    palette.setColor(QPalette.WindowText, QColor('#C8C1C7'))
+    palette.setColor(QPalette.Base, QColor('#F7EAD6'))
     palette.setColor(QPalette.AlternateBase, QColor("#27234d"))
     palette.setColor(QPalette.ToolTipBase, QColor(0, 0, 0))
     palette.setColor(QPalette.ToolTipText, QColor(255, 255, 255))
-    palette.setColor(QPalette.Text, QColor(255, 255, 255))
-    palette.setColor(QPalette.Button, QColor("#18152f"))
-    palette.setColor(QPalette.ButtonText, QColor(255, 255, 255))
+    palette.setColor(QPalette.Text, QColor('#433157'))
+    palette.setColor(QPalette.Button, QColor("#2C1642"))
+    palette.setColor(QPalette.ButtonText, QColor('#C8C1C7'))
     palette.setColor(QPalette.BrightText, QColor(255, 0, 0))
     palette.setColor(QPalette.Link, QColor(42, 130, 218))
     palette.setColor(QPalette.Highlight, QColor(42, 130, 218))

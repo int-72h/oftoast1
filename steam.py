@@ -3,7 +3,6 @@ from pathlib import Path
 from sys import platform,exit
 from subprocess import run
 from shutil import rmtree
-
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QApplication, QMessageBox, QFileDialog
 import sys
