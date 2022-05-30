@@ -17,7 +17,7 @@ from PyQt5.QtGui import QPalette, QColor
 import sys
 
 class Ui_MainWindow(object):
-    def setupUi(self, MainWindow):
+    def setupUi(self, app, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.setEnabled(True)
         MainWindow.resize(608, 180)
@@ -121,7 +121,7 @@ class Ui_MainWindow(object):
 
         writes = list(filter(lambda x: x["type"] == TYPE_WRITE, changes))
         todl = [[self.lineEdit_2.text() + "/objects/" + x["object"],temp_path / x["object"]] for x in writes]
-        x = [x for x in pbar_sg(todl, self)]
+        x = [x for x in pbar_sg(todl, self, app)]
         try:
             os.remove(game_path / ".revision")
         except FileNotFoundError:
@@ -155,7 +155,7 @@ class Ui_MainWindow(object):
         exit(1)
 
 
-def pbar_sg(iter, self, num_cpus=40):
+def pbar_sg(iter, self, app, num_cpus=40):
     length = len(iter)
     pool = Pool(num_cpus)
     map_func = getattr(pool, 'uimap')
@@ -165,6 +165,7 @@ def pbar_sg(iter, self, num_cpus=40):
         self.label_4.setText(it[0])
         self.progressBar.setValue(z)
         self.progressBar.setMaximum(length)
+        app.processEvents()
         yield item
     pool.clear()
 
@@ -206,7 +207,7 @@ if __name__ == "__main__":
     MainWindow = QtWidgets.QMainWindow()
     ui = Ui_MainWindow()
     set_theme(app, MainWindow)
-    ui.setupUi(MainWindow)
+    ui.setupUi(app, MainWindow)
     existing_game_check(ui, MainWindow)
     MainWindow.show()
 
