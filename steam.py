@@ -3,7 +3,11 @@ from pathlib import Path
 from sys import platform,exit
 from subprocess import run
 from shutil import rmtree
-import PySimpleGUI as sg
+
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtWidgets import QApplication, QMessageBox, QFileDialog
+import sys
+
 if platform.startswith('win32'):
     from winreg import *
 def getpath():
@@ -23,18 +27,23 @@ def getpath():
         print("you aren't on anything we support.")
         return -1
     if target_path.exists():
-        events = sg.Window("Old OF install detected", [[sg.T("Old Open fortress installations aren't compatible with "
-                                                             "the new launcher.")], [sg.B('OK',key='ok'),
-                                                                                     sg.B('Cancel')]]).read(close=True)
-        if events[0] == 'ok':
+        exitMsg = QMessageBox()
+        exitMsg.setWindowTitle("OFToast")
+        exitMsg.setText("Old Open fortress installations aren't compatible with the new launcher.\nYour old installation will be removed. ")
+        exitMsg.setStandardButtons(QMessageBox.Cancel | QMessageBox.Ok)
+        buttonPressed = exitMsg.exec_()
+
+        if buttonPressed == QMessageBox.Ok:
             rmtree(target_path)
         else:
             exit()
     elif target_path.parents[0].exists():
         print('All good, carrying on')
+        Path.mkdir(target_path)
     elif target_path.parents[1].exists():
         print('Generating sourcemods folder...')
         Path.mkdir(target_path.parents[0])
+        Path.mkdir(target_path)
     else:
         print("Ok something's wrong, put in your path manually")
         return -1
@@ -52,15 +61,13 @@ def sdk_download(path_to_steamapps):
     if not already_downloaded:
         if platform.startswith('win32'):
             run(["start","steam://install/243750"])
-
         else:
             run(["xdg-open","steam://install/243750"])
-        events = sg.Window("Need to install SDK 2013!",
-                           [[sg.T(
-                               "You need to install Source SDK 2013 on Steam first. An install box should have appeared. If it hasn't, pop this URL into your browser: steam://install/243750 ")],
-                               [sg.B('OK', key='ok')]]).read(close=True)
+        exitMsg = QMessageBox()
+        exitMsg.setWindowTitle("OFToast")
+        exitMsg.setText("You need to install Source SDK 2013 on Steam first.\nAn install box should have appeared. If it hasn't, pop this URL into your browser: steam://install/243750")
+        exitMsg.exec_()
+        exit(1)
     else:
         print("sdk 2013 already installed!")
-
-
 #handle other inputs here
