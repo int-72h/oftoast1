@@ -4,3 +4,4 @@ tvn~=0.0.1
 setuptools~=60.2.0
 vdf~=3.4c
 pathos~=0.2.9
+PyQt5~=5.15.6

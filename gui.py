@@ -183,6 +183,7 @@ def existing_game_check(ui, MainWindow):
         ui.lineEdit.setText(str(ofpath))
 
 def set_theme(app, MainWindow):
+    QApplication.setStyle("fusion")
     icon = QtGui.QIcon()
     icon.addPixmap(QtGui.QPixmap("toast.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
     MainWindow.setWindowIcon(icon)
