@@ -37,7 +37,13 @@ class Ui_MainWindow(object):
         self.label = QtWidgets.QLabel(self.centralwidget)
         self.label.setGeometry(QtCore.QRect(10, 20, 131, 141))
         self.label.setText("")
-        self.label.setPixmap(QtGui.QPixmap("toast.png"))
+        if getattr(sys, "frozen", False):
+            # PyInstaller executable
+            toasty = str(Path(sys._MEIPASS).resolve().joinpath("toast.png"))
+        else:
+            # Raw .py file
+            toasty = "toast.png"
+        self.label.setPixmap(QtGui.QPixmap(toasty))
         self.label.setAlignment(QtCore.Qt.AlignCenter)
         self.label.setObjectName("label")
         self.browse = QtWidgets.QPushButton(self.centralwidget)
