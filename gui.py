@@ -73,6 +73,11 @@ class Ui_MainWindow(object):
         self.label_3.setGeometry(QtCore.QRect(160, 133, 211, 20))
         self.label_3.setAlignment(QtCore.Qt.AlignCenter)
         self.label_3.setObjectName("label_3")
+        self.label_4 = QtWidgets.QLabel(self.centralwidget)
+        self.label_4.setGeometry(QtCore.QRect(200, 100, 341, 16))
+        self.label_4.setText("")
+        self.label_4.setAlignment(QtCore.Qt.AlignCenter)
+        self.label_4.setObjectName("label_4")
         MainWindow.setCentralWidget(self.centralwidget)
 
         self.retranslateUi(MainWindow)
@@ -115,12 +120,8 @@ class Ui_MainWindow(object):
         temp_path = Path(temp_dir.name)
 
         writes = list(filter(lambda x: x["type"] == TYPE_WRITE, changes))
-        for x,y in zip(writes,range(0,len(writes))):
-            if x["type"] == TYPE_WRITE:
-                self.progressBar.setValue(y)
-                self.progressBar.setMaximum(len(writes))
-                urllib.request.urlretrieve(self.lineEdit_2.text() + "/objects/" + x["object"], temp_path / x["object"])
-
+        todl = [[self.lineEdit_2.text() + "/objects/" + x["object"],temp_path / x["object"]] for x in writes]
+        x = [x for x in pbar_sg(todl, self)]
         try:
             os.remove(game_path / ".revision")
         except FileNotFoundError:
@@ -154,16 +155,16 @@ class Ui_MainWindow(object):
         exit(1)
 
 
-def pbar_sg(iter,window,num_cpus=40):
+def pbar_sg(iter, self, num_cpus=40):
     length = len(iter)
-    file = window['file']
     pool = Pool(num_cpus)
     map_func = getattr(pool, 'uimap')
     z = 0
     for item,it in zip(map_func(lambda x:urllib.request.urlretrieve(x[0], x[1]), iter),iter):
         z = z+1
-        file.update(it[0])
-        window["Progress"].UpdateBar(z, length)
+        self.label_4.setText(it[0])
+        self.progressBar.setValue(z)
+        self.progressBar.setMaximum(length)
         yield item
     pool.clear()
 
