@@ -90,7 +90,7 @@ class Ui_MainWindow(object):
         self.browse.setText(_translate("MainWindow", "Browse"))
         self.lineEdit.setText(_translate("MainWindow", "GAMEDIR"))
         self.label_2.setText(_translate("MainWindow", "Download URL"))
-        self.lineEdit_2.setText(_translate("MainWindow", "https://www.openfortress.fun/toast/"))
+        self.lineEdit_2.setText(_translate("MainWindow", "http://toast.openfortress.fun/toast/"))
         self.pushButton.setText(_translate("MainWindow", "Update"))
         self.pushButton_2.setText(_translate("MainWindow", "Cancel"))
         self.label_3.setText(_translate("MainWindow", "Installed Revision: None"))
@@ -167,7 +167,7 @@ class Ui_MainWindow(object):
 
 
 def work(arr):
-    with httpx.Client(http2=True, headers={'user-agent': 'rei/0.0.1'}) as client:
+    with httpx.Client(http2=True, headers={'user-agent': 'Mozilla/5.0'}) as client:
         resp = client.get(arr[0])
         file = open(arr[1], "wb+")
         file.write(resp.content)
@@ -186,7 +186,7 @@ def pbar_sg(iter, self, app, num_cpus=40):
 
 
 def get_revision(url: str, revision: int) -> list[Change]:
-    r = urllib.request.urlopen(url + "/" + str(revision), headers={'User-Agent': 'rei/0.0.1'}).read()
+    r = urllib.request.urlopen(url + "/" + str(revision)).read()
     return json.loads(r)
 
 
