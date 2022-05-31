@@ -1,11 +1,10 @@
+from concurrent.futures import ThreadPoolExecutor,as_completed
 import os
 import urllib.request
 from urllib.error import HTTPError
 import tempfile
 from steam import *
 from pathlib import Path, PosixPath, WindowsPath
-from pathos.multiprocessing import ProcessPool as Pool
-from multiprocessing import shared_memory
 from sys import exit
 from tvn import *
 from shutil import move
@@ -102,8 +101,8 @@ class Ui_MainWindow(object):
         self.label_3.setText(_translate("MainWindow", "Installed Revision: None"))
 
     def clickBrowse(self):
-        gamepath = QFileDialog.getOpenFileName(MainWindow, "Game path", "", "Game Info (*.txt)")
-        self.lineEdit.setText(gamepath[0].removesuffix("gameinfo.txt"))
+        gamepath = QFileDialog.getExistingDirectory(MainWindow, "Game path", "")
+        # self.lineEdit.setText(gamepath[0].removesuffix("gameinfo.txt"))
         revision = get_installed_revision(Path(self.lineEdit.text()))
         if revision >= 0:
             self.label_3.setText("Installed Revision: " + str(revision))
@@ -114,8 +113,12 @@ class Ui_MainWindow(object):
         self.browse.setDisabled(True)
         self.pushButton.setDisabled(True)
         self.pushButton_2.setDisabled(True)
-
         game_path = Path(self.lineEdit.text())
+        if 'open_fortress' not in str(game_path):
+            try:
+                Path.mkdir(game_path / Path('open_fortress'))
+            except FileExistsError:
+                pass
         installed_revision = get_installed_revision(game_path)
         try:
             latest_revision = fetch_latest_revision(self.lineEdit_2.text())
@@ -125,6 +128,7 @@ class Ui_MainWindow(object):
             errorMsg.setText("Invalid URL!")
             errorMsg.exec_()
             exit(1)
+        print(latest_revision)
         revisions = fetch_revisions(self.lineEdit_2.text(), installed_revision, latest_revision)
         changes = replay_changes(revisions)
 
@@ -174,20 +178,18 @@ def work(arr):
         file.write(resp.content)
         file.close()
 
-
-def pbar_sg(iter, self, app, num_cpus=12):
+def pbar_sg(iter, self, app, num_cpus=40):
     length = len(iter)
-    pool = Pool(num_cpus)
     z = 0
-    map_func = getattr(pool, 'uimap')
-    for item, it in zip(map_func(work, iter), iter):
+    executor = ThreadPoolExecutor(num_cpus)
+    futures = {executor.submit(work, x): x for x in iter}
+    for future in as_completed(futures):
+        it = futures[future]
         z = z + 1
         self.label_4.setText(it[0])
         self.progressBar.setValue(z)
         self.progressBar.setMaximum(length)
         app.processEvents()
-        yield item
-    pool.clear()
 
 
 def get_revision(url: str, revision: int) -> list[Change]:

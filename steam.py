@@ -38,20 +38,23 @@ def getpath():
 
             if buttonPressed == QMessageBox.Ok:
                 rmtree(target_path)
-                Path.mkdir(target_path)
             else:
                 exit()
         else:
             print('already exists, carrying on')
     elif target_path.parents[0].exists():
-        print('Generating open fortress folder...')
-        Path.mkdir(target_path)
+        print('carrying on...')
     elif target_path.parents[1].exists():
         print('Generating sourcemods folder...')
         Path.mkdir(target_path.parents[0])
-        Path.mkdir(target_path)
+
     else:
-        print("Ok something's wrong, put in your path manually")
+        exitMsg = QMessageBox()
+        exitMsg.setWindowTitle("OFToast")
+        exitMsg.setText(
+            "We can't find your steam install. Use the browse button to navigate to the sourcemods folder.")
+        exitMsg.setStandardButtons(QMessageBox.Ok)
+        buttonPressed = exitMsg.exec_()
         return -1
     return target_path
 
