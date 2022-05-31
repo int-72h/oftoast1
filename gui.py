@@ -136,8 +136,8 @@ class Ui_MainWindow(object):
         temp_path = Path(temp_dir.name)
 
         writes = list(filter(lambda x: x["type"] == TYPE_WRITE, changes))
-        todl = [[self.lineEdit_2.text() + "/objects/" + x["object"], temp_path / x["object"]] for x in writes]
-        x = [x for x in pbar_sg(todl, self, app)]
+        todl = [[self.lineEdit_2.text() + "objects/" + x["object"], temp_path / x["object"]] for x in writes]
+        pbar_sg(todl, self, app)
         try:
             os.remove(game_path / ".revision")
         except FileNotFoundError:
@@ -214,7 +214,7 @@ def set_theme(app, MainWindow):
     MainWindow.setWindowIcon(icon)
     palette = QPalette()
     palette.setColor(QPalette.Window, QColor('#584169'))
-    palette.setColor(QPalette.WindowText, QColor('#C8C1C7'))
+    palette.setColor(QPalette.WindowText, QColor('#aa6d73'))
     palette.setColor(QPalette.Base, QColor('#F7EAD6'))
     palette.setColor(QPalette.AlternateBase, QColor("#27234d"))
     palette.setColor(QPalette.ToolTipBase, QColor(0, 0, 0))
@@ -224,7 +224,7 @@ def set_theme(app, MainWindow):
     palette.setColor(QPalette.ButtonText, QColor('#C8C1C7'))
     palette.setColor(QPalette.BrightText, QColor(255, 0, 0))
     palette.setColor(QPalette.Link, QColor(42, 130, 218))
-    palette.setColor(QPalette.Highlight, QColor("#2C1642"))
+    palette.setColor(QPalette.Highlight, QColor("#584169"))
     palette.setColor(QPalette.HighlightedText, QColor(0, 0, 0))
     app.setPalette(palette)
 

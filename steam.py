@@ -38,15 +38,18 @@ def getpath():
 
             if buttonPressed == QMessageBox.Ok:
                 rmtree(target_path)
+                Path.mkdir(target_path)
             else:
                 exit()
         else:
             print('already exists, carrying on')
     elif target_path.parents[0].exists():
+        Path.mkdir(target_path)
         print('carrying on...')
     elif target_path.parents[1].exists():
         print('Generating sourcemods folder...')
         Path.mkdir(target_path.parents[0])
+        Path.mkdir(target_path)
 
     else:
         exitMsg = QMessageBox()
