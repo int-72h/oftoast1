@@ -73,9 +73,8 @@ def sdk_download(path_to_steamapps):
         exitMsg = QMessageBox()
         exitMsg.setWindowTitle("OFToast")
         exitMsg.setText(
-            "You need to install Source SDK 2013 on Steam first.\nAn install box should have appeared. If it hasn't, pop this URL into your browser: steam://install/243750")
+            "You need to install Source SDK 2013 on Steam first.\nAn install box should have appeared. If it hasn't, pop this URL into your browser: steam://install/243750\nIf you've already got it installed, ignore this message.")
         exitMsg.exec_()
-        exit(1)
     else:
         print("sdk 2013 already installed!")
 # handle other inputs here
