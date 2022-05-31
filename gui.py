@@ -79,11 +79,6 @@ class Ui_MainWindow(object):
         self.label_3.setGeometry(QtCore.QRect(160, 133, 211, 20))
         self.label_3.setAlignment(QtCore.Qt.AlignCenter)
         self.label_3.setObjectName("label_3")
-        self.label_4 = QtWidgets.QLabel(self.centralwidget)
-        self.label_4.setGeometry(QtCore.QRect(200, 100, 341, 16))
-        self.label_4.setText("")
-        self.label_4.setAlignment(QtCore.Qt.AlignCenter)
-        self.label_4.setObjectName("label_4")
         MainWindow.setCentralWidget(self.centralwidget)
 
         self.retranslateUi(MainWindow)
@@ -172,7 +167,7 @@ class Ui_MainWindow(object):
 
 
 def work(arr):
-    with httpx.Client(http2=True, headers={'user-agent': 'ofl/0.0.0'}) as client:
+    with httpx.Client(http2=True, headers={'user-agent': 'rei/0.0.1'}) as client:
         resp = client.get(arr[0])
         file = open(arr[1], "wb+")
         file.write(resp.content)
@@ -183,10 +178,8 @@ def pbar_sg(iter, self, app, num_cpus=40):
     z = 0
     executor = ThreadPoolExecutor(num_cpus)
     futures = {executor.submit(work, x): x for x in iter}
-    for future in as_completed(futures):
-        it = futures[future]
+    for _ in as_completed(futures):
         z = z + 1
-        self.label_4.setText(it[0])
         self.progressBar.setValue(z)
         self.progressBar.setMaximum(length)
         app.processEvents()
@@ -214,7 +207,7 @@ def set_theme(app, MainWindow):
     MainWindow.setWindowIcon(icon)
     palette = QPalette()
     palette.setColor(QPalette.Window, QColor('#584169'))
-    palette.setColor(QPalette.WindowText, QColor('#aa6d73'))
+    palette.setColor(QPalette.WindowText, QColor('#C8C1C7'))
     palette.setColor(QPalette.Base, QColor('#F7EAD6'))
     palette.setColor(QPalette.AlternateBase, QColor("#27234d"))
     palette.setColor(QPalette.ToolTipBase, QColor(0, 0, 0))
