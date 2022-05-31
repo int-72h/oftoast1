@@ -1,6 +1,6 @@
 import vdf
 from pathlib import Path
-from sys import platform,exit
+from sys import platform, exit
 from subprocess import run
 from shutil import rmtree
 from PyQt5 import QtCore, QtGui, QtWidgets
@@ -9,6 +9,8 @@ import sys
 
 if platform.startswith('win32'):
     from winreg import *
+
+
 def getpath():
     if platform.startswith('linux'):
         target_path = Path.home() / Path('.steam/steam/steamapps/sourcemods/open_fortress')
@@ -26,18 +28,23 @@ def getpath():
         print("you aren't on anything we support.")
         return -1
     if target_path.exists():
-        exitMsg = QMessageBox()
-        exitMsg.setWindowTitle("OFToast")
-        exitMsg.setText("Old Open fortress installations aren't compatible with the new launcher.\nYour old installation will be removed. ")
-        exitMsg.setStandardButtons(QMessageBox.Cancel | QMessageBox.Ok)
-        buttonPressed = exitMsg.exec_()
+        if not (target_path / Path('.revision')).exists():
+            exitMsg = QMessageBox()
+            exitMsg.setWindowTitle("OFToast")
+            exitMsg.setText(
+                "Old Open fortress installations aren't compatible with the new launcher.\nYour old installation will be removed. ")
+            exitMsg.setStandardButtons(QMessageBox.Cancel | QMessageBox.Ok)
+            buttonPressed = exitMsg.exec_()
 
-        if buttonPressed == QMessageBox.Ok:
-            rmtree(target_path)
+            if buttonPressed == QMessageBox.Ok:
+                rmtree(target_path)
+                Path.mkdir(target_path)
+            else:
+                exit()
         else:
-            exit()
+            print('already exists, carrying on')
     elif target_path.parents[0].exists():
-        print('All good, carrying on')
+        print('Generating open fortress folder...')
         Path.mkdir(target_path)
     elif target_path.parents[1].exists():
         print('Generating sourcemods folder...')
@@ -48,8 +55,9 @@ def getpath():
         return -1
     return target_path
 
+
 def sdk_download(path_to_steamapps):
-    library_folders = vdf.load(open(path_to_steamapps/Path('libraryfolders.vdf')))['libraryfolders']
+    library_folders = vdf.load(open(path_to_steamapps / Path('libraryfolders.vdf')))['libraryfolders']
     already_downloaded = False
     for x in library_folders:
         try:
@@ -59,14 +67,15 @@ def sdk_download(path_to_steamapps):
             continue
     if not already_downloaded:
         if platform.startswith('win32'):
-            run(["start","steam://install/243750"])
+            run(["start", "steam://install/243750"], shell=True)
         else:
-            run(["xdg-open","steam://install/243750"])
+            run(["xdg-open", "steam://install/243750"], shell=True)
         exitMsg = QMessageBox()
         exitMsg.setWindowTitle("OFToast")
-        exitMsg.setText("You need to install Source SDK 2013 on Steam first.\nAn install box should have appeared. If it hasn't, pop this URL into your browser: steam://install/243750")
+        exitMsg.setText(
+            "You need to install Source SDK 2013 on Steam first.\nAn install box should have appeared. If it hasn't, pop this URL into your browser: steam://install/243750")
         exitMsg.exec_()
         exit(1)
     else:
         print("sdk 2013 already installed!")
-#handle other inputs here
+# handle other inputs here

@@ -1,18 +1,21 @@
 import os
 import urllib.request
+from urllib.error import HTTPError
 import tempfile
 from steam import *
-from pathlib import Path, PosixPath,WindowsPath
+from pathlib import Path, PosixPath, WindowsPath
 from pathos.multiprocessing import ProcessPool as Pool
+from multiprocessing import shared_memory
 from sys import exit
 from tvn import *
 from shutil import move
-
+import httpx
 
 from PyQt5 import QtCore, QtGui, QtWidgets, Qt
 from PyQt5.QtWidgets import QApplication, QMessageBox, QFileDialog
 from PyQt5.QtGui import QPalette, QColor
 import sys
+
 
 class Ui_MainWindow(object):
     def setupUi(self, app, MainWindow):
@@ -97,7 +100,7 @@ class Ui_MainWindow(object):
         self.pushButton.setText(_translate("MainWindow", "Update"))
         self.pushButton_2.setText(_translate("MainWindow", "Cancel"))
         self.label_3.setText(_translate("MainWindow", "Installed Revision: None"))
-    
+
     def clickBrowse(self):
         gamepath = QFileDialog.getOpenFileName(MainWindow, "Game path", "", "Game Info (*.txt)")
         self.lineEdit.setText(gamepath[0].removesuffix("gameinfo.txt"))
@@ -113,10 +116,15 @@ class Ui_MainWindow(object):
         self.pushButton_2.setDisabled(True)
 
         game_path = Path(self.lineEdit.text())
-
         installed_revision = get_installed_revision(game_path)
-        latest_revision = fetch_latest_revision(self.lineEdit_2.text())
-
+        try:
+            latest_revision = fetch_latest_revision(self.lineEdit_2.text())
+        except HTTPError:
+            errorMsg = QMessageBox()
+            errorMsg.setWindowTitle("OFToast")
+            errorMsg.setText("Invalid URL!")
+            errorMsg.exec_()
+            exit(1)
         revisions = fetch_revisions(self.lineEdit_2.text(), installed_revision, latest_revision)
         changes = replay_changes(revisions)
 
@@ -124,7 +132,7 @@ class Ui_MainWindow(object):
         temp_path = Path(temp_dir.name)
 
         writes = list(filter(lambda x: x["type"] == TYPE_WRITE, changes))
-        todl = [[self.lineEdit_2.text() + "/objects/" + x["object"],temp_path / x["object"]] for x in writes]
+        todl = [[self.lineEdit_2.text() + "/objects/" + x["object"], temp_path / x["object"]] for x in writes]
         x = [x for x in pbar_sg(todl, self, app)]
         try:
             os.remove(game_path / ".revision")
@@ -154,18 +162,26 @@ class Ui_MainWindow(object):
         exitMsg.setText("Done!")
         exitMsg.exec_()
         exit(1)
-    
+
     def clickCancel(self):
         exit(1)
 
 
-def pbar_sg(iter, self, app, num_cpus=40):
+def work(arr):
+    with httpx.Client(http2=True, headers={'user-agent': 'ofl/0.0.0'}) as client:
+        resp = client.get(arr[0])
+        file = open(arr[1], "wb+")
+        file.write(resp.content)
+        file.close()
+
+
+def pbar_sg(iter, self, app, num_cpus=12):
     length = len(iter)
     pool = Pool(num_cpus)
-    map_func = getattr(pool, 'uimap')
     z = 0
-    for item,it in zip(map_func(lambda x:urllib.request.urlretrieve(x[0], x[1]), iter),iter):
-        z = z+1
+    map_func = getattr(pool, 'uimap')
+    for item, it in zip(map_func(work, iter), iter):
+        z = z + 1
         self.label_4.setText(it[0])
         self.progressBar.setValue(z)
         self.progressBar.setMaximum(length)
@@ -173,9 +189,11 @@ def pbar_sg(iter, self, app, num_cpus=40):
         yield item
     pool.clear()
 
+
 def get_revision(url: str, revision: int) -> list[Change]:
     r = urllib.request.urlopen(url + "/" + str(revision), headers={'User-Agent': 'rei/0.0.1'}).read()
     return json.loads(r)
+
 
 def existing_game_check(ui, MainWindow):
     ofpath = getpath()
@@ -185,6 +203,7 @@ def existing_game_check(ui, MainWindow):
         if revision >= 0:
             ui.label_3.setText("Installed Revision: " + str(revision))
         ui.lineEdit.setText(str(ofpath))
+
 
 def set_theme(app, MainWindow):
     QApplication.setStyle("fusion")
@@ -203,9 +222,10 @@ def set_theme(app, MainWindow):
     palette.setColor(QPalette.ButtonText, QColor('#C8C1C7'))
     palette.setColor(QPalette.BrightText, QColor(255, 0, 0))
     palette.setColor(QPalette.Link, QColor(42, 130, 218))
-    palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
+    palette.setColor(QPalette.Highlight, QColor("#2C1642"))
     palette.setColor(QPalette.HighlightedText, QColor(0, 0, 0))
     app.setPalette(palette)
+
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
