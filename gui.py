@@ -7,7 +7,7 @@ from steam import *
 from pathlib import Path, PosixPath, WindowsPath
 from sys import exit
 from tvn import *
-from shutil import move
+from shutil import copy
 import httpx
 
 from PyQt5 import QtCore, QtGui, QtWidgets, Qt
@@ -154,7 +154,8 @@ class Ui_MainWindow(object):
                 pass
 
         for x in writes:
-            move(temp_path / x["object"], str(game_path) + "/" + x["path"])
+            copy(temp_path / x["object"], str(game_path) + "/" + x["path"])
+            os.remove(temp_path/x["object"])
 
         (game_path / ".revision").touch(0o777)
         (game_path / ".revision").write_text(str(latest_revision))
