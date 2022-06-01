@@ -1,7 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor,as_completed
 import os
 import tempfile
-from ofrei.steam import *
+from steam import *
 from sys import exit
 from tvn import *
 from shutil import copy
@@ -98,8 +98,12 @@ class Ui_MainWindow(object):
         self.label_3.setText(_translate("MainWindow", "Installed Revision: None"))
 
     def clickBrowse(self):
+        temp = self.lineEdit.text()
         gamepath = QFileDialog.getExistingDirectory(MainWindow, "Game path", "")
-        self.lineEdit.setText(gamepath)
+        if gamepath == '':
+            self.lineEdit.setText(temp)
+        else:
+            self.lineEdit.setText(gamepath)
         revision = get_installed_revision(Path(self.lineEdit.text()))
         if revision >= 0:
             self.label_3.setText("Installed Revision: " + str(revision))
