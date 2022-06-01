@@ -14,7 +14,7 @@ from sys import exit
 from shutil import move
 import httpx
 
-parser = argparse.ArgumentParser(description="Manage Open Fortress installation.")
+parser = argparse.ArgumentParser(description="Manage Open Fortress installation. Example: cli.py upgrade <dir>")
 parser.add_argument("action", type=str, help='action to execute on a directory, currently only "upgrade"')
 parser.add_argument("directory", type=str, help='action to execute on a directory, currently only "upgrade"')
 parser.add_argument("-u", default="http://toast.openfortress.fun/toast/", help="url to fetch data from")
@@ -35,7 +35,7 @@ print(installed_revision, "->", latest_revision, file=sys.stderr)
 revisions = fetch_revisions(args.u, installed_revision, latest_revision)
 changes = replay_changes(revisions)
 
-temp_dir = tempfile.TemporaryDirectory()
+temp_dir = tempfile.mkdtemp()
 temp_path = Path(temp_dir.name)
 
 writes = list(filter(lambda x: x["type"] == TYPE_WRITE, changes))

@@ -7,7 +7,7 @@ from steam import *
 from pathlib import Path, PosixPath, WindowsPath
 from sys import exit
 from tvn import *
-from shutil import copy
+from shutil import move
 import httpx
 
 from PyQt5 import QtCore, QtGui, QtWidgets, Qt
@@ -100,7 +100,7 @@ class Ui_MainWindow(object):
 
     def clickBrowse(self):
         gamepath = QFileDialog.getExistingDirectory(MainWindow, "Game path", "")
-        # self.lineEdit.setText(gamepath[0].removesuffix("gameinfo.txt"))
+        self.lineEdit.setText(gamepath[0])
         revision = get_installed_revision(Path(self.lineEdit.text()))
         if revision >= 0:
             self.label_3.setText("Installed Revision: " + str(revision))
@@ -130,7 +130,7 @@ class Ui_MainWindow(object):
         revisions = fetch_revisions(self.lineEdit_2.text(), installed_revision, latest_revision)
         changes = replay_changes(revisions)
 
-        temp_dir = tempfile.TemporaryDirectory()
+        temp_dir = tempfile.mkdtemp()
         temp_path = Path(temp_dir.name)
 
         writes = list(filter(lambda x: x["type"] == TYPE_WRITE, changes))
@@ -154,8 +154,7 @@ class Ui_MainWindow(object):
                 pass
 
         for x in writes:
-            copy(temp_path / x["object"], str(game_path) + "/" + x["path"])
-            os.remove(temp_path/x["object"])
+            move(temp_path / x["object"], str(game_path) + "/" + x["path"])
 
         (game_path / ".revision").touch(0o777)
         (game_path / ".revision").write_text(str(latest_revision))
