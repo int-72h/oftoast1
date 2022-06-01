@@ -28,17 +28,35 @@ def getpath():
         print("you aren't on anything we support.")
         return -1
     if target_path.exists():
+        if (target_path / Path('.svn')).exists() or (target_path / Path('.git')).exists():
+            warnMsg = QMessageBox()
+            warnMsg.setWindowTitle("OFToast")
+            warnMsg.setText(
+                "You need to manually remove the .svn folder, or the .git folder. Uninstall tortoiseSVN, unversion it "
+                "in tortoiseSVN, or if you have a .git folder, simply delete it.")
+            warnMsg.setStandardButtons(QMessageBox.Ok)
+            buttonPressed = warnMsg.exec_()
         if not (target_path / Path('.revision')).exists():
-            exitMsg = QMessageBox()
-            exitMsg.setWindowTitle("OFToast")
-            exitMsg.setText(
+            warnMsg = QMessageBox()
+            warnMsg.setWindowTitle("OFToast")
+            warnMsg.setText(
                 "Old Open fortress installations aren't compatible with the new launcher.\nYour old installation will be removed. ")
-            exitMsg.setStandardButtons(QMessageBox.Cancel | QMessageBox.Ok)
-            buttonPressed = exitMsg.exec_()
+            warnMsg.setStandardButtons(QMessageBox.Cancel | QMessageBox.Ok)
+            buttonPressed = warnMsg.exec_()
 
             if buttonPressed == QMessageBox.Ok:
-                rmtree(target_path)
-                Path.mkdir(target_path)
+                try:
+                    rmtree(target_path)
+                    Path.mkdir(target_path)
+                except:
+                    warnMsg = QMessageBox()
+                    warnMsg.setWindowTitle("OFToast")
+                    warnMsg.setText(
+                        "Error removing files! you'll need to remove the open_fortress folder manually...")
+                    warnMsg.setStandardButtons(QMessageBox.Ok)
+                    buttonPressed = warnMsg.exec_()
+                    if buttonPressed == QMessageBox.Ok:
+                        exit()
             else:
                 exit()
         else:

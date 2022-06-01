@@ -7,8 +7,9 @@ from steam import *
 from pathlib import Path, PosixPath, WindowsPath
 from sys import exit
 from tvn import *
-from shutil import move
+from shutil import copy
 import httpx
+import traceback
 
 from PyQt5 import QtCore, QtGui, QtWidgets, Qt
 from PyQt5.QtWidgets import QApplication, QMessageBox, QFileDialog
@@ -100,7 +101,7 @@ class Ui_MainWindow(object):
 
     def clickBrowse(self):
         gamepath = QFileDialog.getExistingDirectory(MainWindow, "Game path", "")
-        self.lineEdit.setText(gamepath[0])
+        self.lineEdit.setText(gamepath)
         revision = get_installed_revision(Path(self.lineEdit.text()))
         if revision >= 0:
             self.label_3.setText("Installed Revision: " + str(revision))
@@ -108,63 +109,78 @@ class Ui_MainWindow(object):
             self.label_3.setText("Installed Revision: None")
 
     def clickUpdate(self):
-        self.browse.setDisabled(True)
-        self.pushButton.setDisabled(True)
-        self.pushButton_2.setDisabled(True)
-        game_path = Path(self.lineEdit.text())
-        if 'open_fortress' not in str(game_path):
-            try:
-                Path.mkdir(game_path / Path('open_fortress'))
-            except FileExistsError:
-                pass
-        installed_revision = get_installed_revision(game_path)
         try:
-            latest_revision = fetch_latest_revision(self.lineEdit_2.text())
-        except HTTPError:
-            errorMsg = QMessageBox()
-            errorMsg.setWindowTitle("OFToast")
-            errorMsg.setText("Invalid URL!")
-            errorMsg.exec_()
-            exit(1)
-        print(latest_revision)
-        revisions = fetch_revisions(self.lineEdit_2.text(), installed_revision, latest_revision)
-        changes = replay_changes(revisions)
-
-        temp_dir = tempfile.mkdtemp()
-        temp_path = Path(temp_dir.name)
-
-        writes = list(filter(lambda x: x["type"] == TYPE_WRITE, changes))
-        todl = [[self.lineEdit_2.text() + "objects/" + x["object"], temp_path / x["object"]] for x in writes]
-        pbar_sg(todl, self, app)
-        try:
-            os.remove(game_path / ".revision")
-        except FileNotFoundError:
-            pass
-
-        for x in list(filter(lambda x: x["type"] == TYPE_DELETE, changes)):
+            self.browse.setDisabled(True)
+            self.pushButton.setDisabled(True)
+            self.pushButton_2.setDisabled(True)
+            game_path = Path(self.lineEdit.text())
+            if 'open_fortress' not in str(game_path):
+                try:
+                    Path.mkdir(game_path / Path('open_fortress'))
+                except FileExistsError:
+                    pass
+            installed_revision = get_installed_revision(game_path)
             try:
-                os.remove(game_path / x["path"])
+                latest_revision = fetch_latest_revision(self.lineEdit_2.text())
+            except HTTPError:
+                errorMsg = QMessageBox()
+                errorMsg.setWindowTitle("OFToast")
+                errorMsg.setText("Invalid URL!")
+                errorMsg.exec_()
+                exit(1)
+            print(latest_revision)
+            revisions = fetch_revisions(self.lineEdit_2.text(), installed_revision, latest_revision)
+            changes = replay_changes(revisions)
+
+            temp_dir = tempfile.mkdtemp()
+            temp_path = Path(temp_dir)
+
+            writes = list(filter(lambda x: x["type"] == TYPE_WRITE, changes))
+            todl = [[self.lineEdit_2.text() + "objects/" + x["object"], temp_path / x["object"]] for x in writes]
+            pbar_sg(todl, self, app)
+            try:
+                os.remove(game_path / ".revision")
             except FileNotFoundError:
                 pass
 
-        for x in list(filter(lambda x: x["type"] == TYPE_MKDIR, changes)):
-            try:
-                os.mkdir(game_path / x["path"], 0o777)
-            except FileExistsError:
-                pass
+            for x in list(filter(lambda x: x["type"] == TYPE_DELETE, changes)):
+                try:
+                    os.remove(game_path / x["path"])
+                except FileNotFoundError:
+                    pass
 
-        for x in writes:
-            move(temp_path / x["object"], str(game_path) + "/" + x["path"])
-
-        (game_path / ".revision").touch(0o777)
-        (game_path / ".revision").write_text(str(latest_revision))
-
-        exitMsg = QMessageBox()
-        exitMsg.setWindowTitle("OFToast")
-        exitMsg.setText("Done!")
-        exitMsg.exec_()
-        exit(1)
-
+            for x in list(filter(lambda x: x["type"] == TYPE_MKDIR, changes)):
+                try:
+                    os.mkdir(game_path / x["path"], 0o777)
+                except FileExistsError:
+                    pass
+            for x in writes:
+                copy(temp_path / x["object"], str(game_path) + "/" + x["path"])
+            (game_path / ".revision").touch(0o777)
+            (game_path / ".revision").write_text(str(latest_revision))
+            rmtree(temp_path)
+            exitMsg = QMessageBox()
+            exitMsg.setWindowTitle("OFToast")
+            exitMsg.setText("Done!")
+            exitMsg.exec_()
+            exit(1)
+        except TimeoutError or urllib.error.HTTPError or ConnectionResetError:
+            errorMsg = QMessageBox()
+            errorMsg.setWindowTitle("rei?")
+            errorMsg.setText("The server's frazzled! Try again later.")
+            errorMsg.exec_()
+        except urllib.error.HTTPError or urllib.error.HTTPError or ConnectionResetError:
+            errorMsg = QMessageBox()
+            errorMsg.setWindowTitle("rei?")
+            errorMsg.setText("The server's frazzled! Try again later.")
+            errorMsg.exec_()
+        except Exception:
+            error_message = traceback.format_exc()
+            errorMsg = QMessageBox()
+            errorMsg.setWindowTitle("rei?")
+            errorMsg.setText("Something's gone wrong! Post the following error in the troubleshooting channel: " + error_message )
+            errorMsg.exec_()
+            exit(1)
     def clickCancel(self):
         exit(1)
 
@@ -176,7 +192,7 @@ def work(arr):
         file.write(resp.content)
         file.close()
 
-def pbar_sg(iter, self, app, num_cpus=40):
+def pbar_sg(iter, self, app, num_cpus=16):
     length = len(iter)
     z = 0
     executor = ThreadPoolExecutor(num_cpus)
@@ -188,7 +204,7 @@ def pbar_sg(iter, self, app, num_cpus=40):
         app.processEvents()
 
 
-def get_revision(url: str, revision: int) -> list[Change]:
+def get_revision(url: str, revision: int):
     r = urllib.request.urlopen(url + "/" + str(revision)).read()
     return json.loads(r)
 
