@@ -44,6 +44,9 @@ class Ui_MainWindow(object):
             # Raw .py file
             toasty = "toast.png"
         self.label.setPixmap(QtGui.QPixmap(toasty))
+        icon = QtGui.QIcon()
+        icon.addPixmap(QtGui.QPixmap(toasty), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        MainWindow.setWindowIcon(icon)
         self.label.setAlignment(QtCore.Qt.AlignCenter)
         self.label.setObjectName("label")
         self.browse = QtWidgets.QPushButton(self.centralwidget)
@@ -202,9 +205,6 @@ def existing_game_check(ui, MainWindow):
 
 def set_theme(app, MainWindow):
     QApplication.setStyle("fusion")
-    icon = QtGui.QIcon()
-    icon.addPixmap(QtGui.QPixmap("toast.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-    MainWindow.setWindowIcon(icon)
     palette = QPalette()
     palette.setColor(QPalette.Window, QColor('#584169'))
     palette.setColor(QPalette.WindowText, QColor('#C8C1C7'))
