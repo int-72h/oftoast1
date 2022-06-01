@@ -69,7 +69,7 @@ def sdk_download(path_to_steamapps):
         try:
             z = library_folders[x]['apps']['243750']
             already_downloaded = True
-        except KeyError or TypeError:
+        except: # VERY DANGEROUS
             continue
     if not already_downloaded:
         if platform.startswith('win32'):
