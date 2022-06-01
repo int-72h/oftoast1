@@ -32,33 +32,10 @@ def getpath():
             warnMsg = QMessageBox()
             warnMsg.setWindowTitle("OFToast")
             warnMsg.setText(
-                "You need to manually remove the .svn folder, or the .git folder. Uninstall tortoiseSVN, unversion it "
-                "in tortoiseSVN, or if you have a .git folder, simply delete it.")
+                "You should remove .svn or .git from your open_fortress folder. We can't do this, you will. It's not "
+                "mandatory but recommended.")
             warnMsg.setStandardButtons(QMessageBox.Ok)
             buttonPressed = warnMsg.exec_()
-        if not (target_path / Path('.revision')).exists():
-            warnMsg = QMessageBox()
-            warnMsg.setWindowTitle("OFToast")
-            warnMsg.setText(
-                "Old Open fortress installations aren't compatible with the new launcher.\nYour old installation will be removed. ")
-            warnMsg.setStandardButtons(QMessageBox.Cancel | QMessageBox.Ok)
-            buttonPressed = warnMsg.exec_()
-
-            if buttonPressed == QMessageBox.Ok:
-                try:
-                    rmtree(target_path)
-                    Path.mkdir(target_path)
-                except:
-                    warnMsg = QMessageBox()
-                    warnMsg.setWindowTitle("OFToast")
-                    warnMsg.setText(
-                        "Error removing files! you'll need to remove the open_fortress folder manually...")
-                    warnMsg.setStandardButtons(QMessageBox.Ok)
-                    buttonPressed = warnMsg.exec_()
-                    if buttonPressed == QMessageBox.Ok:
-                        exit()
-            else:
-                exit()
         else:
             print('already exists, carrying on')
     elif target_path.parents[0].exists():
