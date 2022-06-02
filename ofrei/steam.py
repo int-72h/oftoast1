@@ -1,11 +1,9 @@
 import vdf
 from pathlib import Path
-from sys import platform, exit
+from sys import platform
 from subprocess import run
-from shutil import rmtree
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QApplication, QMessageBox, QFileDialog
-import sys
 
 if platform.startswith('win32'):
     from winreg import *
@@ -58,23 +56,27 @@ def getpath():
 
 
 def sdk_download(path_to_steamapps):
-    library_folders = vdf.load(open(path_to_steamapps / Path('libraryfolders.vdf')))['libraryfolders']
     already_downloaded = False
-    for x in library_folders:
-        try:
-            z = library_folders[x]['apps']['243750']
-            already_downloaded = True
-        except: # VERY DANGEROUS
-            continue
+    try:
+        library_folders = vdf.load(open(path_to_steamapps / Path('libraryfolders.vdf')))['libraryfolders']
+        for x in library_folders:
+            if ('243750' in library_folders[x]['apps'].keys()):
+                already_downloaded = True
+    except:
+        pass
     if not already_downloaded:
         if platform.startswith('win32'):
             run(["start", "steam://install/243750"], shell=True)
+            run(["start", "steam://install/440"], shell=True)
         else:
-            run(["xdg-open", "steam://install/243750"], shell=True)
+            run(["xdg-open", "steam://install/243750"])
+            run(["xdg-open", "steam://install/440"])
         exitMsg = QMessageBox()
         exitMsg.setWindowTitle("OFToast")
         exitMsg.setText(
-            "You need to install Source SDK 2013 on Steam first.\nAn install box should have appeared. If it hasn't, pop this URL into your browser: steam://install/243750\nIf you've already got it installed, ignore this message.")
+            "You need to install Source SDK 2013 and Team Fortress 2 on Steam first.\nAn install box should have "
+            "appeared. If it hasn't, pop these URL into your browser: \nsteam://install/243750\nsteam://install/440\nIf "
+            "you've already got it installed, ignore this message.")
         exitMsg.exec_()
     else:
         print("sdk 2013 already installed!")

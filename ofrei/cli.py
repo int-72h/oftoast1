@@ -3,7 +3,6 @@
 from tvn import *
 import argparse
 import os
-import tempfile
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from ofrei.steam import *
@@ -48,12 +47,6 @@ def work(x):
 
 
 #futures = {executor.submit(work, x): x for x in writes}
-futures = {}
-for x in writes:
-    if x["type"] == TYPE_WRITE:
-        futures[executor.submit(work, x)] = x
-for x in as_completed(futures):
-    print('WRITE ' + futures[x]["path"])
 try:
     os.remove(game_path / ".revision")
 except FileNotFoundError:
@@ -73,6 +66,11 @@ for x in list(filter(lambda x: x["type"] == TYPE_MKDIR, changes)):
     except FileNotFoundError:
         pass
     os.mkdir(game_path / x["path"], 0o777)
-
+futures = {}
+for x in writes:
+    if x["type"] == TYPE_WRITE:
+        futures[executor.submit(work, x)] = x
+for x in as_completed(futures):
+    print('WRITE ' + futures[x]["path"])
 (game_path / ".revision").touch(0o777)
 (game_path / ".revision").write_text(str(latest_revision))

@@ -1,10 +1,8 @@
 from concurrent.futures import ThreadPoolExecutor,as_completed
 import os
-import tempfile
 from steam import *
 from sys import exit
 from tvn import *
-from shutil import copy
 import httpx
 import traceback
 
@@ -14,7 +12,7 @@ from PyQt5.QtGui import QPalette, QColor
 import sys
 
 global version
-version = '0.0.5'
+version = '0.1.0'
 class Ui_MainWindow(object):
     def setupUi(self, app, MainWindow):
         MainWindow.setObjectName("MainWindow")
@@ -92,7 +90,7 @@ class Ui_MainWindow(object):
         self.browse.setText(_translate("MainWindow", "Browse"))
         self.lineEdit.setText(_translate("MainWindow", "GAMEDIR"))
         self.label_2.setText(_translate("MainWindow", "Download URL"))
-        self.lineEdit_2.setText(_translate("MainWindow", "http://bigchungybungy.openfortress.fun/toast/"))
+        self.lineEdit_2.setText(_translate("MainWindow", "https://toast.openfortress.fun/toast/"))
         self.pushButton.setText(_translate("MainWindow", "Update"))
         self.pushButton_2.setText(_translate("MainWindow", "Cancel"))
         self.label_3.setText(_translate("MainWindow", "Installed Revision: None"))
@@ -146,7 +144,6 @@ class Ui_MainWindow(object):
             writes = list(filter(lambda x: x["type"] == TYPE_WRITE, changes))
             client = httpx.Client(http2=True, headers={'user-agent': 'Mozilla/5.0'})
             todl = [[self.lineEdit_2.text() + "objects/" + x["object"], game_path / x["path"],client] for x in writes]
-            pbar_sg(todl, self, app, num_threads)
             try:
                 os.remove(game_path / ".revision")
             except FileNotFoundError:
@@ -163,6 +160,7 @@ class Ui_MainWindow(object):
                     os.mkdir(game_path / x["path"], 0o777)
                 except FileExistsError:
                     pass
+            pbar_sg(todl, self, app, num_threads)
             (game_path / ".revision").touch(0o777)
             (game_path / ".revision").write_text(str(latest_revision))
             exitMsg = QMessageBox()
@@ -208,7 +206,7 @@ def work(arr):
 def pbar_sg(iter, self, app, num_cpus=16):
     length = len(iter)
     z = 0
-    executor = ThreadPoolExecutor(512)
+    executor = ThreadPoolExecutor(num_cpus)
     futures = {executor.submit(work, x): x for x in iter}
     for _ in as_completed(futures):
         z = z + 1
