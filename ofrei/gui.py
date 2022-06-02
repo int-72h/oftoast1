@@ -12,7 +12,7 @@ from PyQt5.QtGui import QPalette, QColor
 import sys
 
 global version
-version = '0.1.1'
+version = '0.1.2'
 class Ui_MainWindow(object):
     def setupUi(self, app, MainWindow):
         MainWindow.setObjectName("MainWindow")
@@ -179,8 +179,12 @@ class Ui_MainWindow(object):
             errorMsg.setText("The server's frazzled! Try again later.")
             errorMsg.exec_()
         except Exception as e:
-            print((type(e).__name__))
             error_message = traceback.format_exc()
+            if 'timeout' or 'reset' in error_message:
+                errorMsg = QMessageBox()
+                errorMsg.setWindowTitle("rei?")
+                errorMsg.setText("The server's frazzled! Try again later.")
+                errorMsg.exec_()
             errorMsg = QMessageBox()
             errorMsg.setWindowTitle("rei?")
             errorMsg.setText("Something's gone wrong! Post the following error in the troubleshooting channel: " + error_message )
