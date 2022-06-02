@@ -12,7 +12,7 @@ from PyQt5.QtGui import QPalette, QColor
 import sys
 
 global version
-version = '0.1.0'
+version = '0.1.1'
 class Ui_MainWindow(object):
     def setupUi(self, app, MainWindow):
         MainWindow.setObjectName("MainWindow")
@@ -198,10 +198,17 @@ def get_latest_ver(url):
     return r.text.strip()
 
 def work(arr):
+    exists= False
+    while exists == False:
         resp = arr[2].get(arr[0])
         file = open(arr[1], "wb+")
         file.write(resp.content)
         file.close()
+        if arr[1].exists():
+            exists = True
+        else:
+            print("file hasn't downloaded...")
+
 
 def pbar_sg(iter, self, app, num_cpus=16):
     length = len(iter)
