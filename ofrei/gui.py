@@ -1,4 +1,4 @@
-from concurrent.futures import ThreadPoolExecutor,as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import os
 from steam import *
 from sys import exit
@@ -13,6 +13,8 @@ import sys
 
 global version
 version = '0.1.2'
+
+
 class Ui_MainWindow(object):
     def setupUi(self, app, MainWindow):
         MainWindow.setObjectName("MainWindow")
@@ -111,10 +113,12 @@ class Ui_MainWindow(object):
     def clickUpdate(self):
         global version
         try:
+            self.pushButton.setText('Updating...')
             self.browse.setDisabled(True)
             self.pushButton.setDisabled(True)
             self.pushButton_2.setDisabled(True)
             game_path = Path(self.lineEdit.text())
+            url = self.lineEdit_2.text()
             if 'open_fortress' not in str(game_path):
                 try:
                     Path.mkdir(game_path / Path('open_fortress'))
@@ -122,9 +126,9 @@ class Ui_MainWindow(object):
                     pass
             installed_revision = get_installed_revision(game_path)
             try:
-                num_threads = get_threads(self.lineEdit_2.text())
-                latest_ver = get_latest_ver(self.lineEdit_2.text())
-                latest_revision = fetch_latest_revision(self.lineEdit_2.text())
+                num_threads = get_threads(url)
+                latest_ver = get_latest_ver(url)
+                latest_revision = fetch_latest_revision(url)
             except:
                 errorMsg = QMessageBox()
                 errorMsg.setWindowTitle("OFToast")
@@ -139,11 +143,11 @@ class Ui_MainWindow(object):
                     "This isn't the latest version! you need to download the latest version from the website.\nlatest "
                     "version: " + latest_ver)
                 errorMsg.exec_()
-            revisions = fetch_revisions(self.lineEdit_2.text(), installed_revision, latest_revision)
+            revisions = fetch_revisions(url, installed_revision, latest_revision)
             changes = replay_changes(revisions)
             writes = list(filter(lambda x: x["type"] == TYPE_WRITE, changes))
-            client = httpx.Client(http2=True, headers={'user-agent': 'Mozilla/5.0'})
-            todl = [[self.lineEdit_2.text() + "objects/" + x["object"], game_path / x["path"],client] for x in writes]
+            client = httpx.Client(headers={'user-agent': 'Mozilla/5.0'})
+            todl = [[url + "objects/" + x["object"], game_path / x["path"], client] for x in writes]
             try:
                 os.remove(game_path / ".revision")
             except FileNotFoundError:
@@ -160,7 +164,21 @@ class Ui_MainWindow(object):
                     os.mkdir(game_path / x["path"], 0o777)
                 except FileExistsError:
                     pass
+            self.pushButton.setText('Downloading...')
             pbar_sg(todl, self, app, num_threads)
+            self.pushButton.setText('Checking...')
+            done = False
+            missing = False
+            while not done:
+                for x in writes:
+                    if not (game_path / x["path"]).exists():
+                        missing = True
+                        while not (game_path / x["path"]).exists():
+                            work([url + "objects/" + x["object"], game_path / x["path"], client])
+                    else:
+                        app.processEvents()
+                if missing == False:
+                    done = True
             (game_path / ".revision").touch(0o777)
             (game_path / ".revision").write_text(str(latest_revision))
             exitMsg = QMessageBox()
@@ -187,22 +205,27 @@ class Ui_MainWindow(object):
                 errorMsg.exec_()
             errorMsg = QMessageBox()
             errorMsg.setWindowTitle("rei?")
-            errorMsg.setText("Something's gone wrong! Post the following error in the troubleshooting channel: " + error_message )
+            errorMsg.setText(
+                "Something's gone wrong! Post the following error in the troubleshooting channel: " + error_message)
             errorMsg.exec_()
             exit(1)
+
     def clickCancel(self):
         exit(1)
+
 
 def get_threads(url):
     r = httpx.get(url + "/reithreads")
     return int(r.text)
 
+
 def get_latest_ver(url):
     r = httpx.get(url + "/reiversion")
     return r.text.strip()
 
+
 def work(arr):
-    exists= False
+    exists = False
     while exists == False:
         resp = arr[2].get(arr[0])
         file = open(arr[1], "wb+")
@@ -224,6 +247,7 @@ def pbar_sg(iter, self, app, num_cpus=16):
         self.progressBar.setValue(z)
         self.progressBar.setMaximum(length)
         app.processEvents()
+
 
 def get_revision(url: str, revision: int):
     r = httpx.get(url + "/" + str(revision))
