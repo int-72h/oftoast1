@@ -39,7 +39,7 @@ executor = ThreadPoolExecutor(int(args.c))
 
 
 def work(x):
-    with httpx.Client(http2=True, headers={'user-agent': 'Mozilla/5.0'}) as client:
+    with httpx.Client(http2=True, headers={'user-agent': 'Mozilla/5.0', 'Connection': 'keep-alive', 'Cache-Control': 'max-age=0'}) as client:
         resp = client.get(args.u + "/objects/" + x["object"])
         file = open(game_path / x["object"], "wb+")
         file.write(resp.content)
