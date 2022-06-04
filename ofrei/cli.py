@@ -5,9 +5,9 @@ import argparse
 import os
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from ofrei.steam import *
+#from ofrei.steam import *
 from pathlib import Path
-from sys import exit
+from sys import exit, stderr
 from shutil import copy,rmtree
 import httpx
 
@@ -19,7 +19,7 @@ parser.add_argument("-c", default="4", help="no. of threads")
 args = parser.parse_args()
 
 if args.action != "upgrade":
-    print("invalid action", file=sys.stderr)
+    print("invalid action", file=stderr)
     exit(1)
 
 game_path = Path(args.directory)
@@ -27,7 +27,7 @@ game_path = Path(args.directory)
 installed_revision = get_installed_revision(game_path)
 latest_revision = fetch_latest_revision(args.u)
 
-print(installed_revision, "->", latest_revision, file=sys.stderr)
+print(installed_revision, "->", latest_revision, file=stderr)
 
 revisions = fetch_revisions(args.u, installed_revision, latest_revision)
 changes = replay_changes(revisions)
@@ -65,7 +65,7 @@ for x in list(filter(lambda x: x["type"] == TYPE_MKDIR, changes)):
         os.remove(game_path / x["path"])
     except FileNotFoundError:
         pass
-    os.mkdir(game_path / x["path"], 0o777)
+    os.makedirs(game_path / x["path"], mode=0o777, exist_ok=True)
 futures = {}
 for x in writes:
     if x["type"] == TYPE_WRITE:
