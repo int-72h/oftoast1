@@ -166,6 +166,7 @@ class Ui_MainWindow(object):
                     pass
             self.pushButton.setText('Downloading...')
             pbar_sg(todl, self, app, num_threads)
+            """
             self.pushButton.setText('Checking...')
             done = False
             missing = False
@@ -179,6 +180,7 @@ class Ui_MainWindow(object):
                         app.processEvents()
                 if missing == False:
                     done = True
+            """
             (game_path / ".revision").touch(0o777)
             (game_path / ".revision").write_text(str(latest_revision))
             exitMsg = QMessageBox()
