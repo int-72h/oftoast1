@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='oflauncher-rei',
-    version='0.0.5',
+    version='0.1.4',
     packages=['ofrei'],
     url='https://www.openfortress.fun',
     license='GPLv3',
