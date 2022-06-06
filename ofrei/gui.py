@@ -12,21 +12,21 @@ from PyQt5.QtGui import QPalette, QColor
 import sys
 
 global version
-version = '0.1.2'
+version = '0.1.3-SNAPSHOT'
 
 
 class Ui_MainWindow(object):
     def setupUi(self, app, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.setEnabled(True)
-        MainWindow.resize(608, 180)
+        MainWindow.resize(700, 200)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(MainWindow.sizePolicy().hasHeightForWidth())
         MainWindow.setSizePolicy(sizePolicy)
-        MainWindow.setMinimumSize(QtCore.QSize(608, 180))
-        MainWindow.setMaximumSize(QtCore.QSize(608, 180))
+        MainWindow.setMinimumSize(QtCore.QSize(700, 200))
+        MainWindow.setMaximumSize(QtCore.QSize(700, 200))
         MainWindow.setAcceptDrops(False)
         MainWindow.setWindowOpacity(1.0)
         MainWindow.setAnimated(True)
@@ -127,18 +127,32 @@ class Ui_MainWindow(object):
             installed_revision = get_installed_revision(game_path)
             try:
                 num_threads = get_threads(url)
+            except:
+                errorMsg = QMessageBox()
+                errorMsg.setWindowTitle("Error!")
+                errorMsg.setText("We failed to obtain the thread file from the server!")
+                errorMsg.exec_()
+                exit(1)
+            try:
                 latest_ver = get_latest_ver(url)
+            except:
+                errorMsg = QMessageBox()
+                errorMsg.setWindowTitle("Error!")
+                errorMsg.setText("We failed to obtain the latest version file from the server!")
+                errorMsg.exec_()
+                exit(1)
+            try:
                 latest_revision = fetch_latest_revision(url)
             except:
                 errorMsg = QMessageBox()
-                errorMsg.setWindowTitle("OFToast")
-                errorMsg.setText("Invalid URL!")
+                errorMsg.setWindowTitle("Error!")
+                errorMsg.setText("We failed to obtain the latest revision file from the server!")
                 errorMsg.exec_()
                 exit(1)
             print(version)
             if latest_ver != version:
                 errorMsg = QMessageBox()
-                errorMsg.setWindowTitle("out of date!")
+                errorMsg.setWindowTitle("Out-of-date Launcher!")
                 errorMsg.setText(
                     "This isn't the latest version! you need to download the latest version from the website.\nlatest "
                     "version: " + latest_ver)
@@ -146,7 +160,7 @@ class Ui_MainWindow(object):
             revisions = fetch_revisions(url, installed_revision, latest_revision)
             changes = replay_changes(revisions)
             writes = list(filter(lambda x: x["type"] == TYPE_WRITE, changes))
-            client = httpx.Client(headers={'user-agent': 'Mozilla/5.0', 'Connection': 'keep-alive', 'Cache-Control': 'max-age=0'})
+            client = httpx.Client(headers={'user-agent': 'Mozilla/5.0', 'Connection': 'keep-alive', 'Cache-Control': 'max-age=0'}, timeout=120.0)
             todl = [[url + "objects/" + x["object"], game_path / x["path"], client] for x in writes]
             try:
                 os.remove(game_path / ".revision")
@@ -164,9 +178,9 @@ class Ui_MainWindow(object):
                     os.mkdir(game_path / x["path"], 0o777)
                 except FileExistsError:
                     pass
-            self.pushButton.setText('Downloading...')
+            self.pushButton.setText('Downloading')
             pbar_sg(todl, self, app, num_threads)
-            self.pushButton.setText('Checking...')
+            self.pushButton.setText('Checking')
             done = False
             missing = False
             while not done:
@@ -189,25 +203,25 @@ class Ui_MainWindow(object):
         except TimeoutError or httpx.RequestError or ConnectionResetError or httpx.ReadTimeout:
             errorMsg = QMessageBox()
             errorMsg.setWindowTitle("rei?")
-            errorMsg.setText("The server's frazzled! Try again later.")
+            errorMsg.setText("We have lost connection to the server. Please try again later. Error Code 1")
             errorMsg.exec_()
         except TimeoutError or httpx.RequestError or ConnectionResetError:
             errorMsg = QMessageBox()
-            errorMsg.setWindowTitle("rei?")
-            errorMsg.setText("The server's frazzled! Try again later.")
+            errorMsg.setWindowTitle("Error!")
+            errorMsg.setText("We have lost connection to the server. Please try again later. Error Code 2")
             errorMsg.exec_()
         except Exception as e:
             error_message = traceback.format_exc()
             if 'timeout' or 'reset' in error_message:
                 errorMsg = QMessageBox()
-                errorMsg.setWindowTitle("rei?")
-                errorMsg.setText("The server's frazzled! Try again later.")
+                errorMsg.setWindowTitle("Error!")
+                errorMsg.setText("We have lost connection to the server. Please try again later. Error Code 3")
                 errorMsg.exec_()
-            errorMsg = QMessageBox()
-            errorMsg.setWindowTitle("rei?")
-            errorMsg.setText(
-                "Something's gone wrong! Post the following error in the troubleshooting channel: " + error_message)
-            errorMsg.exec_()
+            # errorMsg = QMessageBox()
+            # errorMsg.setWindowTitle("rei?")
+            # errorMsg.setText(
+            #     "Something's gone wrong! Post the following error in the troubleshooting channel: " + error_message)
+            # errorMsg.exec_()
             exit(1)
 
     def clickCancel(self):
