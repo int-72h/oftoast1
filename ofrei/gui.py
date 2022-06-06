@@ -12,7 +12,7 @@ from PyQt5.QtGui import QPalette, QColor
 import sys
 
 global version
-version = '0.1.2'
+version = '0.1.4'
 
 
 class Ui_MainWindow(object):
