@@ -19,14 +19,14 @@ class Ui_MainWindow(object):
     def setupUi(self, app, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.setEnabled(True)
-        MainWindow.resize(700, 200)
+        MainWindow.resize(608, 180)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(MainWindow.sizePolicy().hasHeightForWidth())
         MainWindow.setSizePolicy(sizePolicy)
-        MainWindow.setMinimumSize(QtCore.QSize(700, 200))
-        MainWindow.setMaximumSize(QtCore.QSize(700, 200))
+        MainWindow.setMinimumSize(QtCore.QSize(608, 180))
+        MainWindow.setMaximumSize(QtCore.QSize(608, 180))
         MainWindow.setAcceptDrops(False)
         MainWindow.setWindowOpacity(1.0)
         MainWindow.setAnimated(True)
@@ -113,7 +113,7 @@ class Ui_MainWindow(object):
     def clickUpdate(self):
         global version
         try:
-            self.pushButton.setText('Updating...')
+            self.pushButton.setText('Updating')
             self.browse.setDisabled(True)
             self.pushButton.setDisabled(True)
             self.pushButton_2.setDisabled(True)
@@ -128,9 +128,10 @@ class Ui_MainWindow(object):
             try:
                 num_threads = get_threads(url)
             except:
+                error_message = traceback.format_exc()
                 errorMsg = QMessageBox()
                 errorMsg.setWindowTitle("Error!")
-                errorMsg.setText("We failed to obtain the thread file from the server!")
+                errorMsg.setText("We failed to obtain the thread file from the server!" + error_message)
                 errorMsg.exec_()
                 exit(1)
             try:
@@ -157,10 +158,19 @@ class Ui_MainWindow(object):
                     "This isn't the latest version! you need to download the latest version from the website.\nlatest "
                     "version: " + latest_ver)
                 errorMsg.exec_()
-            revisions = fetch_revisions(url, installed_revision, latest_revision)
+            try:
+                revisions = fetch_revisions(url, installed_revision, latest_revision)
+            except:
+                error_message = traceback.format_exc()
+                errorMsg = QMessageBox()
+                errorMsg.setWindowTitle("Error!")
+                errorMsg.setText("We failed to obtain the revision file from the server!" + error_message)
+                errorMsg.exec_()
+                exit(1)
             changes = replay_changes(revisions)
             writes = list(filter(lambda x: x["type"] == TYPE_WRITE, changes))
-            client = httpx.Client(headers={'user-agent': 'Mozilla/5.0', 'Connection': 'keep-alive', 'Cache-Control': 'max-age=0'}, timeout=120.0)
+            limits = httpx.Limits(max_keepalive_connections=None, max_connections=None)
+            client = httpx.Client(headers={'user-agent': 'Mozilla/5.0', 'Connection': 'keep-alive', 'Cache-Control': 'max-age=0'}, timeout=None, limits=limits)
             todl = [[url + "objects/" + x["object"], game_path / x["path"], client] for x in writes]
             try:
                 os.remove(game_path / ".revision")
@@ -217,11 +227,11 @@ class Ui_MainWindow(object):
                 errorMsg.setWindowTitle("Error!")
                 errorMsg.setText("We have lost connection to the server. Please try again later. Error Code 3")
                 errorMsg.exec_()
-            # errorMsg = QMessageBox()
-            # errorMsg.setWindowTitle("rei?")
-            # errorMsg.setText(
-            #     "Something's gone wrong! Post the following error in the troubleshooting channel: " + error_message)
-            # errorMsg.exec_()
+            errorMsg = QMessageBox()
+            errorMsg.setWindowTitle("rei?")
+            errorMsg.setText(
+                "Something's gone wrong! Post the following error in the troubleshooting channel: " + error_message)
+            errorMsg.exec_()
             exit(1)
 
     def clickCancel(self):
@@ -229,12 +239,12 @@ class Ui_MainWindow(object):
 
 
 def get_threads(url):
-    r = httpx.get(url + "/reithreads")
+    r = httpx.get(url + "/reithreads", timeout=None)
     return int(r.text)
 
 
 def get_latest_ver(url):
-    r = httpx.get(url + "/reiversion")
+    r = httpx.get(url + "/reiversion", timeout=None)
     return r.text.strip()
 
 
@@ -264,7 +274,8 @@ def pbar_sg(iter, self, app, num_cpus=16):
 
 
 def get_revision(url: str, revision: int):
-    r = httpx.get(url + "/" + str(revision))
+    limits = httpx.Limits(max_keepalive_connections=None, max_connections=None)
+    r = httpx.get(url + "/" + str(revision), timeout=None, limits=limits)
     return json.loads(r.text)
 
 
@@ -274,7 +285,9 @@ def existing_game_check(ui, MainWindow):
         sdk_download(ofpath.parents[1])
         revision = get_installed_revision(ofpath)
         if revision >= 0:
-            ui.label_3.setText("Installed Revision: " + str(revision))
+            path = os.path.join(ofpath, '.revision')
+            os.remove(path)
+            ui.label_3.setText("Repairing Game")
         ui.lineEdit.setText(str(ofpath))
 
 
