@@ -271,16 +271,6 @@ def existing_game_check(ui, MainWindow):
         sdk_download(ofpath.parents[1])
         revision = get_installed_revision(ofpath)
         if revision >= 0:
-            #delete everything except cfg and custom
-            for fn in os.listdir(ofpath):
-                fullfn = os.path.join(ofpath, fn)
-                if os.path.basename(fullfn) == "cfg" or os.path.basename(fullfn) == "custom":
-                    pass
-                else:
-                    if os.path.isfile(fullfn):
-                        os.remove(fullfn)
-                    else:
-                        shutil.rmtree(fullfn)
             ui.label_3.setText("Installed Revision: " + str(revision))
         ui.lineEdit.setText(str(ofpath))
 
