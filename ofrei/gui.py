@@ -13,7 +13,7 @@ from PyQt5.QtGui import QPalette, QColor
 import sys
 
 global version
-version = '0.1.4'
+version = '0.2.0'
 
 
 class Ui_MainWindow(object):
@@ -93,7 +93,7 @@ class Ui_MainWindow(object):
         self.browse.setText(_translate("MainWindow", "Browse"))
         self.lineEdit.setText(_translate("MainWindow", "GAMEDIR"))
         self.label_2.setText(_translate("MainWindow", "Download URL"))
-        self.lineEdit_2.setText(_translate("MainWindow", "https://toast.openfortress.fun/toast/"))
+        self.lineEdit_2.setText(_translate("MainWindow", "https://toast.openfortress.fun/toast"))
         self.pushButton.setText(_translate("MainWindow", "Update"))
         self.pushButton_2.setText(_translate("MainWindow", "Cancel"))
         self.label_3.setText(_translate("MainWindow", "Installed Revision: None"))
@@ -120,6 +120,10 @@ class Ui_MainWindow(object):
             self.pushButton_2.setDisabled(True)
             game_path = Path(self.lineEdit.text())
             url = self.lineEdit_2.text()
+            response = httpx.get(url, follow_redirects=True)
+            resUrl = response.url
+            url = "https://" + resUrl.host + "/toast/"
+            print("Server Selected: " + url)
             if 'open_fortress' not in str(game_path):
                 try:
                     Path.mkdir(game_path / Path('open_fortress'))
@@ -206,11 +210,11 @@ class Ui_MainWindow(object):
                 errorMsg.setWindowTitle("rei?")
                 errorMsg.setText("The server you've connected to is down! Try again later.")
                 errorMsg.exec_()
-            #errorMsg = QMessageBox()
-            #errorMsg.setWindowTitle("rei?")
-            #errorMsg.setText(
-            #    "Something's gone wrong! Post the following error in the troubleshooting channel: " + error_message)
-            #errorMsg.exec_()
+            errorMsg = QMessageBox()
+            errorMsg.setWindowTitle("rei?")
+            errorMsg.setText(
+                "Something's gone wrong! Post the following error in the troubleshooting channel: " + error_message)
+            errorMsg.exec_()
             exit(1)
 
     def clickCancel(self):
@@ -218,12 +222,12 @@ class Ui_MainWindow(object):
 
 
 def get_threads(url):
-    r = httpx.get(url + "/reithreads", follow_redirects=True)
+    r = httpx.get(url + "/reithreads")
     return int(r.text)
 
 
 def get_latest_ver(url):
-    r = httpx.get(url + "/reiversion", follow_redirects=True)
+    r = httpx.get(url + "/reiversion")
     return r.text.strip()
 
 
@@ -261,7 +265,7 @@ def pbar_sg(iter, self, app, num_cpus=16):
 
 
 def get_revision(url: str, revision: int):
-    r = httpx.get(url + "/" + str(revision), follow_redirects=True)
+    r = httpx.get(url + "/" + str(revision))
     return json.loads(r.text)
 
 
