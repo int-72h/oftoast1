@@ -186,27 +186,20 @@ class Ui_MainWindow(object):
             exitMsg.setText("Done!")
             exitMsg.exec_()
             exit(1)
-        except TimeoutError or httpx.RequestError or ConnectionResetError or httpx.ReadTimeout:
+        except (TimeoutError, httpx.RequestError, ConnectionResetError, httpx.ReadTimeout):
             errorMsg = QMessageBox()
             errorMsg.setWindowTitle("rei?")
             errorMsg.setText("The server's frazzled! Try again later.")
             errorMsg.exec_()
-        except TimeoutError or httpx.RequestError or ConnectionResetError:
+        except Exception:
+            exception_msg = traceback.format_exc()
+            if 'timeout' in exception_msg or 'reset' in exception_msg:
+                error_message = "The server's frazzled! Try again later."
+            else:
+                error_message = "Something's gone wrong! Post the following error in the troubleshooting channel: " + exception_msg
             errorMsg = QMessageBox()
             errorMsg.setWindowTitle("rei?")
-            errorMsg.setText("The server's frazzled! Try again later.")
-            errorMsg.exec_()
-        except Exception as e:
-            error_message = traceback.format_exc()
-            if 'timeout' or 'reset' in error_message:
-                errorMsg = QMessageBox()
-                errorMsg.setWindowTitle("rei?")
-                errorMsg.setText("The server's frazzled! Try again later.")
-                errorMsg.exec_()
-            errorMsg = QMessageBox()
-            errorMsg.setWindowTitle("rei?")
-            errorMsg.setText(
-                "Something's gone wrong! Post the following error in the troubleshooting channel: " + error_message)
+            errorMsg.setText(error_message)
             errorMsg.exec_()
             exit(1)
 
