@@ -192,25 +192,25 @@ class Ui_MainWindow(object):
         except TimeoutError or httpx.RequestError or ConnectionResetError or httpx.ReadTimeout:
             errorMsg = QMessageBox()
             errorMsg.setWindowTitle("rei?")
-            errorMsg.setText("The server's frazzled! Try again later.")
+            errorMsg.setText("The server you've connected to is down! Try again later.")
             errorMsg.exec_()
         except TimeoutError or httpx.RequestError or ConnectionResetError:
             errorMsg = QMessageBox()
             errorMsg.setWindowTitle("rei?")
-            errorMsg.setText("The server's frazzled! Try again later.")
+            errorMsg.setText("The server you've connected to is down! Try again later.")
             errorMsg.exec_()
         except Exception as e:
             error_message = traceback.format_exc()
             if 'timeout' or 'reset' in error_message:
                 errorMsg = QMessageBox()
                 errorMsg.setWindowTitle("rei?")
-                errorMsg.setText("The server's frazzled! Try again later.")
+                errorMsg.setText("The server you've connected to is down! Try again later.")
                 errorMsg.exec_()
-            errorMsg = QMessageBox()
-            errorMsg.setWindowTitle("rei?")
-            errorMsg.setText(
-                "Something's gone wrong! Post the following error in the troubleshooting channel: " + error_message)
-            errorMsg.exec_()
+            #errorMsg = QMessageBox()
+            #errorMsg.setWindowTitle("rei?")
+            #errorMsg.setText(
+            #    "Something's gone wrong! Post the following error in the troubleshooting channel: " + error_message)
+            #errorMsg.exec_()
             exit(1)
 
     def clickCancel(self):
@@ -218,12 +218,12 @@ class Ui_MainWindow(object):
 
 
 def get_threads(url):
-    r = httpx.get(url + "/reithreads")
+    r = httpx.get(url + "/reithreads", follow_redirects=True)
     return int(r.text)
 
 
 def get_latest_ver(url):
-    r = httpx.get(url + "/reiversion")
+    r = httpx.get(url + "/reiversion", follow_redirects=True)
     return r.text.strip()
 
 
@@ -261,7 +261,7 @@ def pbar_sg(iter, self, app, num_cpus=16):
 
 
 def get_revision(url: str, revision: int):
-    r = httpx.get(url + "/" + str(revision))
+    r = httpx.get(url + "/" + str(revision), follow_redirects=True)
     return json.loads(r.text)
 
 
