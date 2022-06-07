@@ -5,6 +5,7 @@ from sys import exit
 from tvn import *
 import httpx
 import traceback
+import shutil
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QApplication, QMessageBox, QFileDialog
@@ -229,7 +230,15 @@ def get_latest_ver(url):
 def work(arr):
     exists = False
     while exists == False:
-        resp = arr[2].get(arr[0])
+        goodDownload = False
+        while goodDownload == False:
+            try:
+                resp = arr[2].get(arr[0])
+                goodDownload = True
+            except httpx.HTTPStatusError as exc:
+                print("HTTP Download error.  Retrying.")
+                goodDownload = False
+
         file = open(arr[1], "wb+")
         file.write(resp.content)
         file.close()
@@ -262,6 +271,16 @@ def existing_game_check(ui, MainWindow):
         sdk_download(ofpath.parents[1])
         revision = get_installed_revision(ofpath)
         if revision >= 0:
+            #delete everything except cfg and custom
+            for fn in os.listdir(ofpath):
+                fullfn = os.path.join(ofpath, fn)
+                if os.path.basename(fullfn) == "cfg" or os.path.basename(fullfn) == "custom":
+                    pass
+                else:
+                    if os.path.isfile(fullfn):
+                        os.remove(fullfn)
+                    else:
+                        shutil.rmtree(fullfn)
             ui.label_3.setText("Installed Revision: " + str(revision))
         ui.lineEdit.setText(str(ofpath))
 
