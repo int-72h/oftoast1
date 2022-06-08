@@ -6,6 +6,7 @@ from tvn import *
 import httpx
 import traceback
 import shutil
+import hashlib
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QApplication, QMessageBox, QFileDialog
@@ -152,7 +153,7 @@ class Ui_MainWindow(object):
             changes = replay_changes(revisions)
             writes = list(filter(lambda x: x["type"] == TYPE_WRITE, changes))
             client = httpx.Client(headers={'user-agent': 'Mozilla/5.0', 'Connection': 'keep-alive', 'Cache-Control': 'max-age=0'})
-            todl = [[url + "objects/" + x["object"], game_path / x["path"], client] for x in writes]
+            todl = [[url + "objects/" + x["object"], game_path / x["path"], x["hash"], client] for x in writes]
             try:
                 os.remove(game_path / ".revision")
             except FileNotFoundError:
@@ -235,12 +236,17 @@ def work(arr):
     exists = False
     while exists == False:
         goodDownload = False
+        hasher = hashlib.md5()
         while goodDownload == False:
-            try:
-                resp = arr[2].get(arr[0])
+            resp = arr[3].get(arr[0])
+            hasher.update(resp.content)
+            hodl = hasher.hexdigest()
+            #print("Hash of file:", hodl)
+            #print("Compared to stored hash of:", arr[2])
+            if hodl == arr[2]:
                 goodDownload = True
-            except httpx.HTTPStatusError as exc:
-                print("HTTP Download error.  Retrying.")
+            else:
+                print("Hash failed for file", arr[1], "Retrying...")
                 goodDownload = False
 
         file = open(arr[1], "wb+")
