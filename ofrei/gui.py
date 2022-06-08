@@ -247,6 +247,7 @@ def work(arr):
                 goodDownload = True
             else:
                 print("Hash failed for file", arr[1], "Retrying...")
+                hasher = hashlib.md5() #reset hasher
                 goodDownload = False
 
         file = open(arr[1], "wb+")
