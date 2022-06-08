@@ -78,8 +78,14 @@ class Ui_MainWindow(object):
         self.pushButton_2.setGeometry(QtCore.QRect(480, 130, 90, 28))
         self.pushButton_2.setObjectName("pushButton_2")
         self.pushButton_2.clicked.connect(self.clickCancel)
+        
+        self.pushButton_3 = QtWidgets.QPushButton(self.centralwidget)
+        self.pushButton_3.setGeometry(QtCore.QRect(280, 130, 90, 28))
+        self.pushButton_3.setObjectName("pushButton_3")
+        self.pushButton_3.clicked.connect(self.clickLaunch)
+        
         self.label_3 = QtWidgets.QLabel(self.centralwidget)
-        self.label_3.setGeometry(QtCore.QRect(160, 133, 211, 20))
+        self.label_3.setGeometry(QtCore.QRect(110, 133, 211, 20))
         self.label_3.setAlignment(QtCore.Qt.AlignCenter)
         self.label_3.setObjectName("label_3")
         MainWindow.setCentralWidget(self.centralwidget)
@@ -96,6 +102,7 @@ class Ui_MainWindow(object):
         self.lineEdit_2.setText(_translate("MainWindow", "https://toast.openfortress.fun/toast"))
         self.pushButton.setText(_translate("MainWindow", "Update"))
         self.pushButton_2.setText(_translate("MainWindow", "Cancel"))
+        self.pushButton_3.setText(_translate("MainWindow", "Launch"))
         self.label_3.setText(_translate("MainWindow", "Installed Revision: None"))
 
     def clickBrowse(self):
@@ -219,6 +226,49 @@ class Ui_MainWindow(object):
 
     def clickCancel(self):
         exit(1)
+        
+    def clickLaunch(self):
+        self.pushButton_3.setText('Launching...')
+        game_path = Path(self.lineEdit.text())
+        if 'open_fortress' not in str(game_path):
+            errorMsg = QMessageBox()
+            errorMsg.setWindowTitle("rei?")
+            errorMsg.setText("You dont seem to have Open Fortress installed! Click the 'Update' button to install.")
+            errorMsg.exec_()
+            self.pushButton_3.setText('Launch')
+            return
+            
+        ofpath = getpath()
+        if ofpath != -1:
+            library_folders = vdf.load(open(ofpath.parents[1] / Path('libraryfolders.vdf')))['libraryfolders']
+            sdkExists = False
+            for x in library_folders:
+                if ('243750' in library_folders[x]['apps'].keys()):
+                    print(library_folders[x]['path'])
+                    sdkPath = (library_folders[x]['path'] / Path('steamapps') / Path('common') / Path('Source SDK Base 2013 Multiplayer'))
+                    sdkExists = True
+            if sdkExists == False:
+                errorMsg = QMessageBox()
+                errorMsg.setWindowTitle("rei?")
+                errorMsg.setText("You dont seem to have the Source Sdk 2013 base multiplayer installed!")
+                errorMsg.exec_()
+                self.pushButton_3.setText('Launch')
+                return
+        else:
+            errorMsg = QMessageBox()
+            errorMsg.setWindowTitle("rei?")
+            errorMsg.setText("You dont seem to have Open Fortress installed! Click the 'Update' button to install.")
+            errorMsg.exec_()
+            self.pushButton_3.setText('Launch')
+            return
+        
+        if platform.startswith('win32'):
+            hl2 = "{sdk}\hl2.exe".format(sdk = sdkPath)
+            run([hl2, "-game", ofpath], shell=True)
+        else:
+            hl2 = "{sdk}\hl2_linux".format(sdk = sdkPath)
+            run([hl2, "-game", ofpath])
+        self.pushButton_3.setText('Launch')
 
 
 def get_threads(url):
