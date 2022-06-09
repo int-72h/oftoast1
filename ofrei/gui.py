@@ -382,6 +382,7 @@ def work_verif(arr):
         else:
             print(arr[1], "failed verification, redownloading...")
             work(arr)
+        f.close()
     else:
         print(arr[1], "not found, redownloading...")
         work(arr)
