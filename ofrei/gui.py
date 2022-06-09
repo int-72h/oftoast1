@@ -14,7 +14,7 @@ from PyQt5.QtGui import QPalette, QColor
 import sys
 
 global version
-version = '0.2.0'
+version = '0.2.2'
 
 
 class Ui_MainWindow(object):
@@ -235,6 +235,7 @@ def get_latest_ver(url):
 def work(arr):
     exists = False
     while exists == False:
+        wasProblematic = False
         goodDownload = False
         hasher = hashlib.md5()
         while goodDownload == False:
@@ -246,10 +247,13 @@ def work(arr):
             if hodl == arr[2]:
                 goodDownload = True
             else:
-                print("Hash failed for file", arr[1], "Retrying...")
+                if wasProblematic == False:
+                    print("Hash failed for file", arr[1], "Retrying...")
+                wasProblematic = True
                 hasher = hashlib.md5() #reset hasher
                 goodDownload = False
-
+        if wasProblematic:
+            print(arr[1], "was able to finish downloading!")
         file = open(arr[1], "wb+")
         file.write(resp.content)
         file.close()
