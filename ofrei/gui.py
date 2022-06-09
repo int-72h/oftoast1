@@ -120,6 +120,7 @@ class Ui_MainWindow(object):
             self.pushButton.setDisabled(True)
             self.pushButton_2.setDisabled(True)
             self.pushButton_3.setDisabled(True)
+            app.processEvents()
             game_path = Path(self.lineEdit.text())
             url = self.lineEdit_2.text()
             response = httpx.get(url, follow_redirects=True)
@@ -173,21 +174,6 @@ class Ui_MainWindow(object):
                     pass
             self.pushButton.setText('Downloading...')
             pbar_sg(todl, self, app, num_threads)
-            """
-            self.pushButton.setText('Checking...')
-            done = False
-            missing = False
-            while not done:
-                for x in writes:
-                    if not (game_path / x["path"]).exists():
-                        missing = True
-                        while not (game_path / x["path"]).exists():
-                            work([url + "objects/" + x["object"], game_path / x["path"], client])
-                    else:
-                        app.processEvents()
-                if missing == False:
-                    done = True
-            """
             (game_path / ".revision").touch(0o777)
             (game_path / ".revision").write_text(str(latest_revision))
             exitMsg = QMessageBox()
@@ -229,6 +215,7 @@ class Ui_MainWindow(object):
             self.pushButton.setDisabled(True)
             self.pushButton_2.setDisabled(True)
             self.pushButton_3.setDisabled(True)
+            app.processEvents()
             game_path = Path(self.lineEdit.text())
             url = self.lineEdit_2.text()
             response = httpx.get(url, follow_redirects=True)
@@ -282,21 +269,6 @@ class Ui_MainWindow(object):
                     pass
             self.pushButton_3.setText('Verifying...')
             pbar_sg_verif(todl, self, app, num_threads)
-            """
-            self.pushButton.setText('Checking...')
-            done = False
-            missing = False
-            while not done:
-                for x in writes:
-                    if not (game_path / x["path"]).exists():
-                        missing = True
-                        while not (game_path / x["path"]).exists():
-                            work([url + "objects/" + x["object"], game_path / x["path"], client])
-                    else:
-                        app.processEvents()
-                if missing == False:
-                    done = True
-            """
             (game_path / ".revision").touch(0o777)
             (game_path / ".revision").write_text(str(latest_revision))
             exitMsg = QMessageBox()
@@ -373,6 +345,7 @@ def work_verif(arr):
     if arr[1].exists():
         f = open(arr[1], "rb")
         fcontents = f.read()
+        f.close()
         hasher = hashlib.md5()
         hasher.update(fcontents)
         hodl = hasher.hexdigest()
@@ -382,7 +355,6 @@ def work_verif(arr):
         else:
             print(arr[1], "failed verification, redownloading...")
             work(arr)
-        f.close()
     else:
         print(arr[1], "not found, redownloading...")
         work(arr)
