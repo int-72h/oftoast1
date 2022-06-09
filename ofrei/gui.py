@@ -6,6 +6,7 @@ from tvn import *
 import httpx
 import traceback
 import shutil
+import hashlib
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QApplication, QMessageBox, QFileDialog
@@ -13,7 +14,7 @@ from PyQt5.QtGui import QPalette, QColor
 import sys
 
 global version
-version = '0.2.0'
+version = '0.2.2'
 
 
 class Ui_MainWindow(object):
@@ -49,13 +50,10 @@ class Ui_MainWindow(object):
         MainWindow.setWindowIcon(icon)
         self.label.setAlignment(QtCore.Qt.AlignCenter)
         self.label.setObjectName("label")
-        self.browse = QtWidgets.QPushButton(self.centralwidget)
-        self.browse.setGeometry(QtCore.QRect(160, 20, 121, 28))
-        self.browse.setObjectName("browse")
-        self.browse.clicked.connect(self.clickBrowse)
         self.lineEdit = QtWidgets.QLineEdit(self.centralwidget)
-        self.lineEdit.setGeometry(QtCore.QRect(290, 20, 291, 28))
+        self.lineEdit.setGeometry(QtCore.QRect(160, 20, 421, 28))
         self.lineEdit.setObjectName("lineEdit")
+        #self.lineEdit.setDisabled(True)
         self.label_2 = QtWidgets.QLabel(self.centralwidget)
         self.label_2.setGeometry(QtCore.QRect(160, 60, 121, 31))
         self.label_2.setAlignment(QtCore.Qt.AlignCenter)
@@ -78,8 +76,12 @@ class Ui_MainWindow(object):
         self.pushButton_2.setGeometry(QtCore.QRect(480, 130, 90, 28))
         self.pushButton_2.setObjectName("pushButton_2")
         self.pushButton_2.clicked.connect(self.clickCancel)
+        self.pushButton_3 = QtWidgets.QPushButton(self.centralwidget)
+        self.pushButton_3.setGeometry(QtCore.QRect(280, 130, 90, 28))
+        self.pushButton_3.setObjectName("pushButton_3")
+        self.pushButton_3.clicked.connect(self.clickVerify)
         self.label_3 = QtWidgets.QLabel(self.centralwidget)
-        self.label_3.setGeometry(QtCore.QRect(160, 133, 211, 20))
+        self.label_3.setGeometry(QtCore.QRect(90, 133, 211, 20))
         self.label_3.setAlignment(QtCore.Qt.AlignCenter)
         self.label_3.setObjectName("label_3")
         MainWindow.setCentralWidget(self.centralwidget)
@@ -90,12 +92,12 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "OFToast " + version))
-        self.browse.setText(_translate("MainWindow", "Browse"))
         self.lineEdit.setText(_translate("MainWindow", "GAMEDIR"))
         self.label_2.setText(_translate("MainWindow", "Download URL"))
         self.lineEdit_2.setText(_translate("MainWindow", "https://toast.openfortress.fun/toast"))
         self.pushButton.setText(_translate("MainWindow", "Update"))
         self.pushButton_2.setText(_translate("MainWindow", "Cancel"))
+        self.pushButton_3.setText(_translate("MainWindow", "Verify"))
         self.label_3.setText(_translate("MainWindow", "Installed Revision: None"))
 
     def clickBrowse(self):
@@ -115,9 +117,9 @@ class Ui_MainWindow(object):
         global version
         try:
             self.pushButton.setText('Updating...')
-            self.browse.setDisabled(True)
             self.pushButton.setDisabled(True)
             self.pushButton_2.setDisabled(True)
+            self.pushButton_3.setDisabled(True)
             game_path = Path(self.lineEdit.text())
             url = self.lineEdit_2.text()
             response = httpx.get(url, follow_redirects=True)
@@ -152,7 +154,7 @@ class Ui_MainWindow(object):
             changes = replay_changes(revisions)
             writes = list(filter(lambda x: x["type"] == TYPE_WRITE, changes))
             client = httpx.Client(headers={'user-agent': 'Mozilla/5.0', 'Connection': 'keep-alive', 'Cache-Control': 'max-age=0'})
-            todl = [[url + "objects/" + x["object"], game_path / x["path"], client] for x in writes]
+            todl = [[url + "objects/" + x["object"], game_path / x["path"], x["hash"], client] for x in writes]
             try:
                 os.remove(game_path / ".revision")
             except FileNotFoundError:
@@ -219,6 +221,112 @@ class Ui_MainWindow(object):
 
     def clickCancel(self):
         exit(1)
+    
+    def clickVerify(self):
+        global version
+        try:
+            self.pushButton_3.setText('Verifying...')
+            self.pushButton.setDisabled(True)
+            self.pushButton_2.setDisabled(True)
+            self.pushButton_3.setDisabled(True)
+            game_path = Path(self.lineEdit.text())
+            url = self.lineEdit_2.text()
+            response = httpx.get(url, follow_redirects=True)
+            resUrl = response.url
+            url = "https://" + resUrl.host + "/toast/"
+            print("Server Selected: " + url)
+            if 'open_fortress' not in str(game_path):
+                try:
+                    Path.mkdir(game_path / Path('open_fortress'))
+                except FileExistsError:
+                    pass
+            installed_revision = -1 # = get_installed_revision(game_path)
+            try:
+                num_threads = get_threads(url)
+                latest_ver = get_latest_ver(url)
+                latest_revision = fetch_latest_revision(url)
+            except:
+                errorMsg = QMessageBox()
+                errorMsg.setWindowTitle("OFToast")
+                errorMsg.setText("Invalid URL!")
+                errorMsg.exec_()
+                exit(1)
+            print(version)
+            if latest_ver != version:
+                errorMsg = QMessageBox()
+                errorMsg.setWindowTitle("out of date!")
+                errorMsg.setText(
+                    "This isn't the latest version! you need to download the latest version from the website.\nlatest "
+                    "version: " + latest_ver)
+                errorMsg.exec_()
+            revisions = fetch_revisions(url, installed_revision, latest_revision)
+            changes = replay_changes(revisions)
+            writes = list(filter(lambda x: x["type"] == TYPE_WRITE, changes))
+            client = httpx.Client(headers={'user-agent': 'Mozilla/5.0', 'Connection': 'keep-alive', 'Cache-Control': 'max-age=0'})
+            todl = [[url + "objects/" + x["object"], game_path / x["path"], x["hash"], client] for x in writes]
+            try:
+                os.remove(game_path / ".revision")
+            except FileNotFoundError:
+                pass
+
+            for x in list(filter(lambda x: x["type"] == TYPE_DELETE, changes)):
+                try:
+                    os.remove(game_path / x["path"])
+                except FileNotFoundError:
+                    pass
+
+            for x in list(filter(lambda x: x["type"] == TYPE_MKDIR, changes)):
+                try:
+                    os.mkdir(game_path / x["path"], 0o777)
+                except FileExistsError:
+                    pass
+            self.pushButton_3.setText('Verifying...')
+            pbar_sg_verif(todl, self, app, num_threads)
+            """
+            self.pushButton.setText('Checking...')
+            done = False
+            missing = False
+            while not done:
+                for x in writes:
+                    if not (game_path / x["path"]).exists():
+                        missing = True
+                        while not (game_path / x["path"]).exists():
+                            work([url + "objects/" + x["object"], game_path / x["path"], client])
+                    else:
+                        app.processEvents()
+                if missing == False:
+                    done = True
+            """
+            (game_path / ".revision").touch(0o777)
+            (game_path / ".revision").write_text(str(latest_revision))
+            exitMsg = QMessageBox()
+            exitMsg.setWindowTitle("OFToast")
+            exitMsg.setText("Done!")
+            exitMsg.exec_()
+            exit(1)
+        except TimeoutError or httpx.RequestError or ConnectionResetError or httpx.ReadTimeout:
+            errorMsg = QMessageBox()
+            errorMsg.setWindowTitle("rei?")
+            errorMsg.setText("The server you've connected to is down! Try again later.")
+            errorMsg.exec_()
+        except TimeoutError or httpx.RequestError or ConnectionResetError:
+            errorMsg = QMessageBox()
+            errorMsg.setWindowTitle("rei?")
+            errorMsg.setText("The server you've connected to is down! Try again later.")
+            errorMsg.exec_()
+        except Exception as e:
+            error_message = traceback.format_exc()
+            if 'timeout' or 'reset' in error_message:
+                errorMsg = QMessageBox()
+                errorMsg.setWindowTitle("rei?")
+                errorMsg.setText("The server you've connected to is down! Try again later.")
+                errorMsg.exec_()
+            errorMsg = QMessageBox()
+            errorMsg.setWindowTitle("rei?")
+            errorMsg.setText(
+                "Something's gone wrong! Post the following error in the troubleshooting channel: " + error_message)
+            errorMsg.exec_()
+            exit(1)
 
 
 def get_threads(url):
@@ -234,15 +342,25 @@ def get_latest_ver(url):
 def work(arr):
     exists = False
     while exists == False:
+        wasProblematic = False
         goodDownload = False
+        hasher = hashlib.md5()
         while goodDownload == False:
-            try:
-                resp = arr[2].get(arr[0])
+            resp = arr[3].get(arr[0])
+            hasher.update(resp.content)
+            hodl = hasher.hexdigest()
+            #print("Hash of file:", hodl)
+            #print("Compared to stored hash of:", arr[2])
+            if hodl == arr[2]:
                 goodDownload = True
-            except httpx.HTTPStatusError as exc:
-                print("HTTP Download error.  Retrying.")
+            else:
+                if wasProblematic == False:
+                    print("Hash failed for file", arr[1], "Retrying...")
+                wasProblematic = True
+                hasher = hashlib.md5() #reset hasher
                 goodDownload = False
-
+        if wasProblematic:
+            print(arr[1], "was able to finish downloading!")
         file = open(arr[1], "wb+")
         file.write(resp.content)
         file.close()
@@ -251,12 +369,40 @@ def work(arr):
         else:
             print("file hasn't downloaded...")
 
+def work_verif(arr):
+    if arr[1].exists():
+        f = open(arr[1], "rb")
+        fcontents = f.read()
+        hasher = hashlib.md5()
+        hasher.update(fcontents)
+        hodl = hasher.hexdigest()
+        if hodl == arr[2]:
+            #good :)
+            pass
+        else:
+            print(arr[1], "failed verification, redownloading...")
+            work(arr)
+    else:
+        print(arr[1], "not found, redownloading...")
+        work(arr)
+
 
 def pbar_sg(iter, self, app, num_cpus=16):
     length = len(iter)
     z = 0
     executor = ThreadPoolExecutor(num_cpus)
     futures = {executor.submit(work, x): x for x in iter}
+    for _ in as_completed(futures):
+        z = z + 1
+        self.progressBar.setValue(z)
+        self.progressBar.setMaximum(length)
+        app.processEvents()
+
+def pbar_sg_verif(iter, self, app, num_cpus=16):
+    length = len(iter)
+    z = 0
+    executor = ThreadPoolExecutor(num_cpus)
+    futures = {executor.submit(work_verif, x): x for x in iter}
     for _ in as_completed(futures):
         z = z + 1
         self.progressBar.setValue(z)
