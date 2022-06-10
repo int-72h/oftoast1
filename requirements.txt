@@ -5,5 +5,5 @@ setuptools~=60.2.0
 vdf~=3.4c
 pathos~=0.2.9
 PyQt5~=5.15.6
-httpx~=0.23.0
+httpx[http2]~=0.23.0
 future~=0.18.2
