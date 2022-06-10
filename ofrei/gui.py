@@ -14,7 +14,7 @@ from PyQt5.QtGui import QPalette, QColor
 import sys
 
 global version
-version = '0.2.2'
+version = '0.2.3'
 user_agent = 'toast_ua'
 
 
