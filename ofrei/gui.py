@@ -96,7 +96,7 @@ class Ui_MainWindow(object):
         self.progressBar.setTextDirection(QtWidgets.QProgressBar.TopToBottom)
         self.progressBar.setFormat("")
         self.progressBar.setObjectName("progressBar")
-        self.pushButton = QtWidgets.QPushButton(self.centralwidget
+        self.pushButton = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton.setGeometry(QtCore.QRect(100, 430, 90, 28))
         self.pushButton.setObjectName("pushButton")
         self.pushButton.clicked.connect(self.clickUpdate)
@@ -112,7 +112,7 @@ class Ui_MainWindow(object):
         self.pushButton_3.setObjectName("pushButton_3")
         self.pushButton_3.clicked.connect(self.clickVerify)
         self.pushButton_4 = QtWidgets.QPushButton(self.centralwidget)
-        self.pushButton_4.setGeometry(QtCore.QRect(530, 130, 90, 28))
+        self.pushButton_4.setGeometry(QtCore.QRect(300, 430, 90, 28))
         self.pushButton_4.setObjectName("pushButton_4")
         self.pushButton_4.clicked.connect(self.clickLaunch)
         self.label_3 = QtWidgets.QLabel(self.centralwidget)
@@ -388,11 +388,13 @@ class Ui_MainWindow(object):
             return
         
         if platform.startswith('win32'):
-            hl2 = "{sdk}\hl2.exe".format(sdk = sdkPath)
-            run([hl2, "-game", ofpath], shell=True)
+            #hl2 = "{sdk}\hl2.exe".format(sdk = sdkPath)
+            #run([hl2, "-game", ofpath], shell=True)
+            run(["start", "steam://rungameid/11677091221058336806"], shell=True)
         else:
-            hl2 = "{sdk}\hl2_linux".format(sdk = sdkPath)
-            run([hl2, "-game", ofpath])
+            #hl2 = "{sdk}\hl2_linux".format(sdk = sdkPath)
+            #run([hl2, "-game", ofpath])
+            run(["xdg-open","steam://rungameid/11677091221058336806"])
         self.pushButton_4.setText('Launch')
 
 
