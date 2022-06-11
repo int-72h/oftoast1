@@ -68,10 +68,6 @@ class Ui_MainWindow(object):
         MainWindow.setWindowIcon(icon)
         self.label.setAlignment(QtCore.Qt.AlignCenter)
         self.label.setObjectName("label")
-        self.browse = QtWidgets.QPushButton(self.centralwidget)
-        self.browse.setGeometry(QtCore.QRect(160, 20, 121, 28))
-        self.browse.setObjectName("browse")
-        self.browse.clicked.connect(self.clickBrowse)
         self.lineEdit = QtWidgets.QLineEdit(self.centralwidget)
         self.lineEdit.setGeometry(QtCore.QRect(100, 330, 421, 28))
         self.lineEdit.setObjectName("lineEdit")
@@ -124,7 +120,6 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "OFToast " + version))
-        self.browse.setText(_translate("MainWindow", "Browse"))
         self.lineEdit.setText(_translate("MainWindow", "GAMEDIR"))
         self.label_2.setText(_translate("MainWindow", "Download URL:"))
         self.label_4.setText(_translate("MainWindow", "Install Folder:"))
@@ -217,19 +212,6 @@ class Ui_MainWindow(object):
                     pass
             #self.pushButton.setText('Downloading...')
             pbar_sg(todl, self, app, num_threads)
-            self.pushButton.setText('Checking...')
-            done = False
-            missing = False
-            while not done:
-                for x in writes:
-                    if not (game_path / x["path"]).exists():
-                        missing = True
-                        while not (game_path / x["path"]).exists():
-                            work([url + "objects/" + x["object"], game_path / x["path"], client])
-                    else:
-                        app.processEvents()
-                if missing == False:
-                    done = True
             (game_path / ".revision").touch(0o777)
             (game_path / ".revision").write_text(str(latest_revision))
             #now verify just in case
