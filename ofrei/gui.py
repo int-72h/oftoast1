@@ -14,7 +14,8 @@ from PyQt5.QtGui import QPalette, QColor
 import sys
 
 global version
-version = '0.2.2'
+version = '0.2.3'
+user_agent = 'toast_ua'
 
 
 class Ui_MainWindow(object):
@@ -123,7 +124,7 @@ class Ui_MainWindow(object):
             app.processEvents()
             game_path = Path(self.lineEdit.text())
             url = self.lineEdit_2.text()
-            response = httpx.get(url, follow_redirects=True)
+            response = httpx.get(url, headers={'user-agent': user_agent}, follow_redirects=True)
             resUrl = response.url
             url = "https://" + resUrl.host + "/toast/"
             print("Server Selected: " + url)
@@ -142,6 +143,12 @@ class Ui_MainWindow(object):
                 errorMsg.setWindowTitle("OFToast")
                 errorMsg.setText("Invalid URL!")
                 errorMsg.exec_()
+                error_message = traceback.format_exc()
+                errorMsg = QMessageBox()
+                errorMsg.setWindowTitle("rei?")
+                errorMsg.setText(
+                    "Something's gone wrong! Post the following error in the troubleshooting channel: " + error_message)
+                errorMsg.exec_()
                 exit(1)
             print(version)
             if latest_ver != version:
@@ -154,7 +161,7 @@ class Ui_MainWindow(object):
             revisions = fetch_revisions(url, installed_revision, latest_revision)
             changes = replay_changes(revisions)
             writes = list(filter(lambda x: x["type"] == TYPE_WRITE, changes))
-            client = httpx.Client(headers={'user-agent': 'Mozilla/5.0', 'Connection': 'keep-alive', 'Cache-Control': 'max-age=0'})
+            client = httpx.Client(headers={'user-agent': user_agent, 'Connection': 'keep-alive', 'Cache-Control': 'max-age=0'}, http2=True)
             todl = [[url + "objects/" + x["object"], game_path / x["path"], x["hash"], client] for x in writes]
             try:
                 os.remove(game_path / ".revision")
@@ -218,7 +225,7 @@ class Ui_MainWindow(object):
             app.processEvents()
             game_path = Path(self.lineEdit.text())
             url = self.lineEdit_2.text()
-            response = httpx.get(url, follow_redirects=True)
+            response = httpx.get(url, headers={'user-agent': user_agent},follow_redirects=True)
             resUrl = response.url
             url = "https://" + resUrl.host + "/toast/"
             print("Server Selected: " + url)
@@ -249,7 +256,7 @@ class Ui_MainWindow(object):
             revisions = fetch_revisions(url, installed_revision, latest_revision)
             changes = replay_changes(revisions)
             writes = list(filter(lambda x: x["type"] == TYPE_WRITE, changes))
-            client = httpx.Client(headers={'user-agent': 'Mozilla/5.0', 'Connection': 'keep-alive', 'Cache-Control': 'max-age=0'})
+            client = httpx.Client(headers={'user-agent': user_agent, 'Connection': 'keep-alive', 'Cache-Control': 'max-age=0'}, http2=True)
             todl = [[url + "objects/" + x["object"], game_path / x["path"], x["hash"], client] for x in writes]
             try:
                 os.remove(game_path / ".revision")
@@ -302,12 +309,12 @@ class Ui_MainWindow(object):
 
 
 def get_threads(url):
-    r = httpx.get(url + "/reithreads")
+    r = httpx.get(url + "/reithreads", headers={'user-agent': user_agent}, follow_redirects=True)
     return int(r.text)
 
 
 def get_latest_ver(url):
-    r = httpx.get(url + "/reiversion")
+    r = httpx.get(url + "/reiversion", headers={'user-agent': user_agent}, follow_redirects=True)
     return r.text.strip()
 
 
@@ -384,9 +391,22 @@ def pbar_sg_verif(iter, self, app, num_cpus=16):
 
 
 def get_revision(url: str, revision: int):
-    r = httpx.get(url + "/" + str(revision))
+    r = httpx.get(url + "/" + str(revision), headers={'user-agent': user_agent}, follow_redirects=True)
     return json.loads(r.text)
 
+def fetch_latest_revision(url):
+	#r = urllib.request.urlopen()
+	r = httpx.get(url + "revisions/latest", headers={'user-agent': user_agent}, follow_redirects=True)
+	return int(r.text)
+
+def fetch_revisions(url,first,last):
+	revisions = []
+	for x in range(first+1, last+1):
+		if not (x < 0):
+			#r = urllib.request.urlopen(url + "revisions/" + str(x))
+			r = httpx.get(url + "revisions/" + str(x), headers={'user-agent': user_agent}, follow_redirects=True)
+			revisions.append(json.loads(r.text))
+	return revisions
 
 def existing_game_check(ui, MainWindow):
     ofpath = getpath()
