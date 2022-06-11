@@ -56,6 +56,7 @@ def getpath():
 
 
 def sdk_download(path_to_steamapps):
+    #Check Source SDK
     already_downloaded = False
     try:
         library_folders = vdf.load(open(path_to_steamapps / Path('libraryfolders.vdf')))['libraryfolders']
@@ -67,17 +68,39 @@ def sdk_download(path_to_steamapps):
     if not already_downloaded:
         if platform.startswith('win32'):
             run(["start", "steam://install/243750"], shell=True)
-            run(["start", "steam://install/440"], shell=True)
         else:
             run(["xdg-open", "steam://install/243750"])
-            run(["xdg-open", "steam://install/440"])
         exitMsg = QMessageBox()
         exitMsg.setWindowTitle("OFToast")
         exitMsg.setText(
-            "You need to install Source SDK 2013 and Team Fortress 2 on Steam first.\nAn install box should have "
-            "appeared. If it hasn't, pop these URL into your browser: \nsteam://install/243750\nsteam://install/440\nIf "
+            "You need to install Source SDK 2013 for Open Fortress to run.\nAn install box should have "
+            "appeared. If it hasn't, pop this URL into your browser: \nsteam://install/243750\nIf "
             "you've already got it installed, ignore this message.")
         exitMsg.exec_()
     else:
         print("sdk 2013 already installed!")
+
+    #Check TF2
+    already_downloaded=False
+    try:
+        library_folders = vdf.load(open(path_to_steamapps / Path('libraryfolders.vdf')))['libraryfolders']
+        for x in library_folders:
+            if ('440' in library_folders[x]['apps'].keys()):
+                already_downloaded = True
+    except:
+        pass
+    if not already_downloaded:
+        if platform.startswith('win32'):
+            run(["start", "steam://install/440"], shell=True)
+        else:
+            run(["xdg-open", "steam://install/440"])
+        exitMsg = QMessageBox()
+        exitMsg.setWindowTitle("OFToast")
+        exitMsg.setText(
+            "You need to install Team Fortress 2 on Steam for Open Fortress to run.\nAn install box should have "
+            "appeared. If it hasn't, pop this URL into your browser: \nsteam://install/440\nIf "
+            "you've already got it installed, ignore this message.")
+        exitMsg.exec_()
+    else:
+        print("tf2 already installed!")
 # handle other inputs here
