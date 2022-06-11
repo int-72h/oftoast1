@@ -9,27 +9,44 @@ import shutil
 import hashlib
 
 from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtCore import QObject, pyqtSignal, QEvent
 from PyQt5.QtWidgets import QApplication, QMessageBox, QFileDialog
-from PyQt5.QtGui import QPalette, QColor
+from PyQt5.QtGui import QPalette, QColor, QFont
 import sys
 
 global version
-version = '0.2.3'
+version = '0.2.4'
 user_agent = 'toast_ua'
 
 
+def clickable(widget): # make this function global
+    class Filter(QObject):
+        clicked = pyqtSignal()
+
+        def eventFilter(self, obj, event):
+            if obj == widget and event.type() == QEvent.MouseButtonRelease and obj.rect().contains(event.pos()):
+                self.clicked.emit()
+                return True
+            else:
+                return False
+    filter = Filter(widget)
+    widget.installEventFilter(filter)
+    return filter.clicked
+
 class Ui_MainWindow(object):
+    wasWarned = False
+    verWarned = False
     def setupUi(self, app, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.setEnabled(True)
-        MainWindow.resize(608, 180)
+        MainWindow.resize(720, 480)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(MainWindow.sizePolicy().hasHeightForWidth())
         MainWindow.setSizePolicy(sizePolicy)
-        MainWindow.setMinimumSize(QtCore.QSize(608, 180))
-        MainWindow.setMaximumSize(QtCore.QSize(608, 180))
+        MainWindow.setMinimumSize(QtCore.QSize(720, 480))
+        MainWindow.setMaximumSize(QtCore.QSize(720, 480))
         MainWindow.setAcceptDrops(False)
         MainWindow.setWindowOpacity(1.0)
         MainWindow.setAnimated(True)
@@ -37,7 +54,7 @@ class Ui_MainWindow(object):
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.label = QtWidgets.QLabel(self.centralwidget)
-        self.label.setGeometry(QtCore.QRect(10, 20, 131, 141))
+        self.label.setGeometry(QtCore.QRect(295, 20, 131, 141))
         self.label.setText("")
         if getattr(sys, "frozen", False):
             # PyInstaller executable
@@ -52,38 +69,48 @@ class Ui_MainWindow(object):
         self.label.setAlignment(QtCore.Qt.AlignCenter)
         self.label.setObjectName("label")
         self.lineEdit = QtWidgets.QLineEdit(self.centralwidget)
-        self.lineEdit.setGeometry(QtCore.QRect(160, 20, 421, 28))
+        self.lineEdit.setGeometry(QtCore.QRect(100, 330, 421, 28))
         self.lineEdit.setObjectName("lineEdit")
+        self.lineEdit.setReadOnly(True)
         #self.lineEdit.setDisabled(True)
         self.label_2 = QtWidgets.QLabel(self.centralwidget)
-        self.label_2.setGeometry(QtCore.QRect(160, 60, 121, 31))
-        self.label_2.setAlignment(QtCore.Qt.AlignCenter)
+        self.label_2.setGeometry(QtCore.QRect(100, 360, 121, 31))
+        #self.label_2.setAlignment(QtCore.Qt.AlignCenter)
         self.label_2.setObjectName("label_2")
         self.lineEdit_2 = QtWidgets.QLineEdit(self.centralwidget)
-        self.lineEdit_2.setGeometry(QtCore.QRect(290, 60, 291, 28))
+        self.lineEdit_2.setGeometry(QtCore.QRect(100, 390, 291, 28))
+        clickable(self.lineEdit_2).connect(self.downloadWarning)
+        self.label_4 = QtWidgets.QLabel(self.centralwidget)
+        self.label_4.setGeometry(QtCore.QRect(100, 300, 121, 31))
+        self.label_4.setObjectName("label_4")
         self.lineEdit_2.setObjectName("lineEdit_2")
+        self.label_status = QtWidgets.QLabel(self.centralwidget)
+        self.label_status.setGeometry(QtCore.QRect(100, 180, 521, 40))
+        self.label_status.setObjectName("label_status")
+        self.label_status.setFont(QFont('Arial', 20))
+        self.label_status.setAlignment(QtCore.Qt.AlignCenter)
         self.progressBar = QtWidgets.QProgressBar(self.centralwidget)
-        self.progressBar.setGeometry(QtCore.QRect(160, 100, 421, 16))
+        self.progressBar.setGeometry(QtCore.QRect(100, 230, 521, 16))
         self.progressBar.setProperty("value", 0)
         self.progressBar.setInvertedAppearance(False)
         self.progressBar.setTextDirection(QtWidgets.QProgressBar.TopToBottom)
         self.progressBar.setFormat("")
         self.progressBar.setObjectName("progressBar")
         self.pushButton = QtWidgets.QPushButton(self.centralwidget)
-        self.pushButton.setGeometry(QtCore.QRect(380, 130, 90, 28))
+        self.pushButton.setGeometry(QtCore.QRect(100, 430, 90, 28))
         self.pushButton.setObjectName("pushButton")
         self.pushButton.clicked.connect(self.clickUpdate)
         self.pushButton_2 = QtWidgets.QPushButton(self.centralwidget)
-        self.pushButton_2.setGeometry(QtCore.QRect(480, 130, 90, 28))
+        self.pushButton_2.setGeometry(QtCore.QRect(580, 430, 90, 28))
         self.pushButton_2.setObjectName("pushButton_2")
         self.pushButton_2.clicked.connect(self.clickCancel)
         self.pushButton_3 = QtWidgets.QPushButton(self.centralwidget)
-        self.pushButton_3.setGeometry(QtCore.QRect(280, 130, 90, 28))
+        self.pushButton_3.setGeometry(QtCore.QRect(200, 430, 90, 28))
         self.pushButton_3.setObjectName("pushButton_3")
         self.pushButton_3.clicked.connect(self.clickVerify)
         self.label_3 = QtWidgets.QLabel(self.centralwidget)
-        self.label_3.setGeometry(QtCore.QRect(90, 133, 211, 20))
-        self.label_3.setAlignment(QtCore.Qt.AlignCenter)
+        self.label_3.setGeometry(QtCore.QRect(100, 250, 211, 20))
+        #self.label_3.setAlignment(QtCore.Qt.AlignCenter)
         self.label_3.setObjectName("label_3")
         MainWindow.setCentralWidget(self.centralwidget)
 
@@ -94,7 +121,9 @@ class Ui_MainWindow(object):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "OFToast " + version))
         self.lineEdit.setText(_translate("MainWindow", "GAMEDIR"))
-        self.label_2.setText(_translate("MainWindow", "Download URL"))
+        self.label_2.setText(_translate("MainWindow", "Download URL:"))
+        self.label_4.setText(_translate("MainWindow", "Install Folder:"))
+        self.label_status.setText(_translate("MainWindow", "Waiting to Download"))
         self.lineEdit_2.setText(_translate("MainWindow", "https://toast.openfortress.fun/toast"))
         self.pushButton.setText(_translate("MainWindow", "Update"))
         self.pushButton_2.setText(_translate("MainWindow", "Cancel"))
@@ -117,7 +146,8 @@ class Ui_MainWindow(object):
     def clickUpdate(self):
         global version
         try:
-            self.pushButton.setText('Updating...')
+            #self.pushButton.setText('Updating...')
+            self.label_status.setText('Updating...')
             self.pushButton.setDisabled(True)
             self.pushButton_2.setDisabled(True)
             self.pushButton_3.setDisabled(True)
@@ -151,7 +181,8 @@ class Ui_MainWindow(object):
                 errorMsg.exec_()
                 exit(1)
             print(version)
-            if latest_ver != version:
+            if latest_ver != version and self.verWarned == False:
+                self.verWarned = True
                 errorMsg = QMessageBox()
                 errorMsg.setWindowTitle("out of date!")
                 errorMsg.setText(
@@ -179,10 +210,12 @@ class Ui_MainWindow(object):
                     os.mkdir(game_path / x["path"], 0o777)
                 except FileExistsError:
                     pass
-            self.pushButton.setText('Downloading...')
+            #self.pushButton.setText('Downloading...')
             pbar_sg(todl, self, app, num_threads)
             (game_path / ".revision").touch(0o777)
             (game_path / ".revision").write_text(str(latest_revision))
+            #now verify just in case
+            self.clickVerify()
             exitMsg = QMessageBox()
             exitMsg.setWindowTitle("OFToast")
             exitMsg.setText("Done!")
@@ -218,7 +251,8 @@ class Ui_MainWindow(object):
     def clickVerify(self):
         global version
         try:
-            self.pushButton_3.setText('Verifying...')
+            #self.pushButton_3.setText('Verifying...')
+            self.label_status.setText('Verifying...')
             self.pushButton.setDisabled(True)
             self.pushButton_2.setDisabled(True)
             self.pushButton_3.setDisabled(True)
@@ -246,7 +280,8 @@ class Ui_MainWindow(object):
                 errorMsg.exec_()
                 exit(1)
             print(version)
-            if latest_ver != version:
+            if latest_ver != version and self.verWarned == False:
+                self.verWarned = True
                 errorMsg = QMessageBox()
                 errorMsg.setWindowTitle("out of date!")
                 errorMsg.setText(
@@ -274,7 +309,7 @@ class Ui_MainWindow(object):
                     os.mkdir(game_path / x["path"], 0o777)
                 except FileExistsError:
                     pass
-            self.pushButton_3.setText('Verifying...')
+            #self.pushButton_3.setText('Verifying...')
             pbar_sg_verif(todl, self, app, num_threads)
             (game_path / ".revision").touch(0o777)
             (game_path / ".revision").write_text(str(latest_revision))
@@ -306,6 +341,13 @@ class Ui_MainWindow(object):
                 "Something's gone wrong! Post the following error in the troubleshooting channel: " + error_message)
             errorMsg.exec_()
             exit(1)
+    def downloadWarning(self):
+        if self.wasWarned==False:
+            self.wasWarned=True
+            warnMsg = QMessageBox()
+            warnMsg.setWindowTitle("Warning")
+            warnMsg.setText("Changing the Download URL is not advised. Only change it if you know what you're doing.")
+            warnMsg.exec_()
 
 
 def get_threads(url):
@@ -319,52 +361,58 @@ def get_latest_ver(url):
 
 
 def work(arr):
-    exists = False
-    while exists == False:
-        wasProblematic = False
-        goodDownload = False
-        hasher = hashlib.md5()
-        while goodDownload == False:
-            resp = arr[3].get(arr[0])
-            hasher.update(resp.content)
-            hodl = hasher.hexdigest()
-            #print("Hash of file:", hodl)
-            #print("Compared to stored hash of:", arr[2])
-            if hodl == arr[2]:
-                goodDownload = True
+    try:
+        exists = False
+        while exists == False:
+            wasProblematic = False
+            goodDownload = False
+            hasher = hashlib.md5()
+            while goodDownload == False:
+                resp = arr[3].get(arr[0])
+                hasher.update(resp.content)
+                hodl = hasher.hexdigest()
+                #print("Hash of file:", hodl)
+                #print("Compared to stored hash of:", arr[2])
+                if hodl == arr[2]:
+                    goodDownload = True
+                else:
+                    if wasProblematic == False:
+                        print("Hash failed for file", arr[1], "Retrying...")
+                    wasProblematic = True
+                    hasher = hashlib.md5() #reset hasher
+                    goodDownload = False
+            if wasProblematic:
+                print(arr[1], "was able to finish downloading!")
+            file = open(arr[1], "wb+")
+            file.write(resp.content)
+            file.close()
+            if arr[1].exists():
+                exists = True
             else:
-                if wasProblematic == False:
-                    print("Hash failed for file", arr[1], "Retrying...")
-                wasProblematic = True
-                hasher = hashlib.md5() #reset hasher
-                goodDownload = False
-        if wasProblematic:
-            print(arr[1], "was able to finish downloading!")
-        file = open(arr[1], "wb+")
-        file.write(resp.content)
-        file.close()
-        if arr[1].exists():
-            exists = True
-        else:
-            print("file hasn't downloaded...")
+                print("file hasn't downloaded...")
+    except:
+        work(arr) #hate this workaround
 
 def work_verif(arr):
-    if arr[1].exists():
-        f = open(arr[1], "rb")
-        fcontents = f.read()
-        f.close()
-        hasher = hashlib.md5()
-        hasher.update(fcontents)
-        hodl = hasher.hexdigest()
-        if hodl == arr[2]:
-            #good :)
-            pass
+    try:
+        if arr[1].exists():
+            f = open(arr[1], "rb")
+            fcontents = f.read()
+            f.close()
+            hasher = hashlib.md5()
+            hasher.update(fcontents)
+            hodl = hasher.hexdigest()
+            if hodl == arr[2]:
+                #good :)
+                pass
+            else:
+                print(arr[1], "failed verification, redownloading...")
+                work(arr)
         else:
-            print(arr[1], "failed verification, redownloading...")
+            print(arr[1], "not found, redownloading...")
             work(arr)
-    else:
-        print(arr[1], "not found, redownloading...")
-        work(arr)
+    except:
+        work_verif(arr)
 
 
 def pbar_sg(iter, self, app, num_cpus=16):
