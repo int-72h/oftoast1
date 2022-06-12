@@ -175,7 +175,7 @@ class Ui_MainWindow(object):
                 errorMsg.exec_()
                 error_message = traceback.format_exc()
                 errorMsg = QMessageBox()
-                errorMsg.setWindowTitle("rei?")
+                errorMsg.setWindowTitle("jar's broke, jams gone everywhere")
                 errorMsg.setText(
                     "Something's gone wrong! Post the following error in the troubleshooting channel: " + error_message)
                 errorMsg.exec_()
@@ -223,23 +223,23 @@ class Ui_MainWindow(object):
             exit(1)
         except TimeoutError or httpx.RequestError or ConnectionResetError or httpx.ReadTimeout:
             errorMsg = QMessageBox()
-            errorMsg.setWindowTitle("rei?")
+            errorMsg.setWindowTitle("jar's broke, jams gone everywhere")
             errorMsg.setText("The server you've connected to is down! Try again later.")
             errorMsg.exec_()
         except TimeoutError or httpx.RequestError or ConnectionResetError:
             errorMsg = QMessageBox()
-            errorMsg.setWindowTitle("rei?")
+            errorMsg.setWindowTitle("jar's broke, jams gone everywhere")
             errorMsg.setText("The server you've connected to is down! Try again later.")
             errorMsg.exec_()
         except Exception as e:
             error_message = traceback.format_exc()
             if 'timeout' or 'reset' in error_message:
                 errorMsg = QMessageBox()
-                errorMsg.setWindowTitle("rei?")
+                errorMsg.setWindowTitle("jar's broke, jams gone everywhere")
                 errorMsg.setText("The server you've connected to is down! Try again later.")
                 errorMsg.exec_()
             errorMsg = QMessageBox()
-            errorMsg.setWindowTitle("rei?")
+            errorMsg.setWindowTitle("jar's broke, jams gone everywhere")
             errorMsg.setText(
                 "Something's gone wrong! Post the following error in the troubleshooting channel: " + error_message)
             errorMsg.exec_()
@@ -320,23 +320,23 @@ class Ui_MainWindow(object):
             exit(1)
         except TimeoutError or httpx.RequestError or ConnectionResetError or httpx.ReadTimeout:
             errorMsg = QMessageBox()
-            errorMsg.setWindowTitle("rei?")
+            errorMsg.setWindowTitle("jar's broke, jams gone everywhere")
             errorMsg.setText("The server you've connected to is down! Try again later.")
             errorMsg.exec_()
         except TimeoutError or httpx.RequestError or ConnectionResetError:
             errorMsg = QMessageBox()
-            errorMsg.setWindowTitle("rei?")
+            errorMsg.setWindowTitle("jar's broke, jams gone everywhere")
             errorMsg.setText("The server you've connected to is down! Try again later.")
             errorMsg.exec_()
         except Exception as e:
             error_message = traceback.format_exc()
             if 'timeout' or 'reset' in error_message:
                 errorMsg = QMessageBox()
-                errorMsg.setWindowTitle("rei?")
+                errorMsg.setWindowTitle("jar's broke, jams gone everywhere")
                 errorMsg.setText("The server you've connected to is down! Try again later.")
                 errorMsg.exec_()
             errorMsg = QMessageBox()
-            errorMsg.setWindowTitle("rei?")
+            errorMsg.setWindowTitle("jar's broke, jams gone everywhere")
             errorMsg.setText(
                 "Something's gone wrong! Post the following error in the troubleshooting channel: " + error_message)
             errorMsg.exec_()
