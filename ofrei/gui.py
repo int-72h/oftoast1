@@ -125,7 +125,7 @@ class Ui_MainWindow(object):
         self.label_4.setText(_translate("MainWindow", "Install Folder:"))
         self.label_status.setText(_translate("MainWindow", "Waiting to Download"))
         self.lineEdit_2.setText(_translate("MainWindow", "https://toast.openfortress.fun/toast"))
-        self.pushButton.setText(_translate("MainWindow", "Update"))
+        self.pushButton.setText(_translate("MainWindow", "Install"))
         self.pushButton_2.setText(_translate("MainWindow", "Cancel"))
         self.pushButton_3.setText(_translate("MainWindow", "Verify"))
         self.label_3.setText(_translate("MainWindow", "Installed Revision: None"))
@@ -139,8 +139,10 @@ class Ui_MainWindow(object):
             self.lineEdit.setText(gamepath)
         revision = get_installed_revision(Path(self.lineEdit.text()))
         if revision >= 0:
+            self.pushButton.setText("Update")
             self.label_3.setText("Installed Revision: " + str(revision))
         else:
+            self.pushButton.setText("Install")
             self.label_3.setText("Installed Revision: None")
 
     def clickUpdate(self):
@@ -462,6 +464,7 @@ def existing_game_check(ui, MainWindow):
         sdk_download(ofpath.parents[1])
         revision = get_installed_revision(ofpath)
         if revision >= 0:
+            ui.pushButton.setText("Update")
             ui.label_3.setText("Installed Revision: " + str(revision))
         ui.lineEdit.setText(str(ofpath))
 
