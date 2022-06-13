@@ -132,7 +132,10 @@ class Ui_MainWindow(object):
         self.label_4.setText(_translate("MainWindow", "Install Folder:"))
         self.label_status.setText(_translate("MainWindow", "Waiting to Download"))
         self.lineEdit_2.setText(_translate("MainWindow", "https://toast.openfortress.fun/toast"))
-        self.pushButton.setText(_translate("MainWindow", "Update"))
+        if os.path.isfile((game_path/Path('.revision')))
+            self.pushButton.setText(_translate("MainWindow", "Update"))
+        else
+            self.pushButton.setText(_translate("MainWindow", "Install"))
         self.pushButton_2.setText(_translate("MainWindow", "Cancel"))
         self.pushButton_3.setText(_translate("MainWindow", "Verify"))
         self.label_3.setText(_translate("MainWindow", "Installed Revision: None"))
@@ -355,30 +358,59 @@ class Ui_MainWindow(object):
     def clickLaunch(self):
         self.pushButton_4.setText('Launching...')
         game_path = Path(self.lineEdit.text())
-        if 'open_fortress' not in str(game_path):
+        installed = os.path.isfile((game_path/Path('.revision')))
+        if not installed:
             errorMsg = QMessageBox()
             errorMsg.setWindowTitle("rei?")
             errorMsg.setText("You dont seem to have Open Fortress installed! Click the 'Update' button to install.")
             errorMsg.exec_()
             self.pushButton_4.setText('Launch')
             return
-            
-        ofpath = getpath()
+
         if ofpath != -1:
-            library_folders = vdf.load(open(ofpath.parents[1] / Path('libraryfolders.vdf')))['libraryfolders']
+            library_folders = vdf.load(open(game_path.parents[1] / Path('libraryfolders.vdf')))['libraryfolders']
             sdkExists = False
+            tf2Exists = False
             for x in library_folders:
                 if ('243750' in library_folders[x]['apps'].keys()):
-                    print(library_folders[x]['path'])
+                    #print(library_folders[x]['path'])
                     sdkPath = (library_folders[x]['path'] / Path('steamapps') / Path('common') / Path('Source SDK Base 2013 Multiplayer'))
-                    sdkExists = True
-            if sdkExists == False:
+                    if os.path.isdir((sdkPath / Path('bin'))):
+                    	sdkExists = True
+            for x in library_folders:
+                if ('440' in library_folders[x]['apps'].keys()):
+                    #print(library_folders[x]['path'])
+                    tf2Path = (library_folders[x]['path'] / Path('steamapps') / Path('common') / Path('Team Fortress 2'))
+                    if os.path.isdir((tf2Path / Path('bin'))):
+                    	tf2Exists = True                    	
+
+                    	
+            if sdkExists == False and tf2Exists == False:
                 errorMsg = QMessageBox()
                 errorMsg.setWindowTitle("rei?")
-                errorMsg.setText("You dont seem to have the Source Sdk 2013 base multiplayer installed!")
+                errorMsg.setText("You dont seem to have the Source Sdk 2013 Base Multiplayer or Team Fortress 2 installed!" + 
+                "They are a requirement to play Open Fortress.")
                 errorMsg.exec_()
                 self.pushButton_4.setText('Launch')
                 return
+                
+            if sdkExists == False:
+                errorMsg = QMessageBox()
+                errorMsg.setWindowTitle("rei?")
+                errorMsg.setText("You dont seem to have the Source Sdk 2013 Base Multiplayer installed! It is a requirement to play Open Fortress.")
+                errorMsg.exec_()
+                self.pushButton_4.setText('Launch')
+                return
+                
+            if tf2Exists == False:
+                errorMsg = QMessageBox()
+                errorMsg.setWindowTitle("rei?")
+                errorMsg.setText("You dont seem to have Team Fortress 2 installed! It is a requirement to play Open Fortress.")
+                errorMsg.exec_()
+                self.pushButton_4.setText('Launch')
+                return
+                
+
         else:
             errorMsg = QMessageBox()
             errorMsg.setWindowTitle("rei?")
