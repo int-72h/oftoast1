@@ -132,9 +132,9 @@ class Ui_MainWindow(object):
         self.label_4.setText(_translate("MainWindow", "Install Folder:"))
         self.label_status.setText(_translate("MainWindow", "Waiting to Download"))
         self.lineEdit_2.setText(_translate("MainWindow", "https://toast.openfortress.fun/toast"))
-        if os.path.isfile((game_path/Path('.revision')))
+        if os.path.isfile((game_path/Path('.revision'))):
             self.pushButton.setText(_translate("MainWindow", "Update"))
-        else
+        else:
             self.pushButton.setText(_translate("MainWindow", "Install"))
         self.pushButton_2.setText(_translate("MainWindow", "Cancel"))
         self.pushButton_3.setText(_translate("MainWindow", "Verify"))
