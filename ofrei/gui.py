@@ -364,7 +364,7 @@ class Ui_MainWindow(object):
             self.pushButton_4.setText('Launch')
             return
 
-        if ofpath != -1:
+        if game_path != -1:
             library_folders = vdf.load(open(game_path.parents[1] / Path('libraryfolders.vdf')))['libraryfolders']
             sdkExists = False
             tf2Exists = False
@@ -411,7 +411,7 @@ class Ui_MainWindow(object):
         else:
             errorMsg = QMessageBox()
             errorMsg.setWindowTitle("rei?")
-            errorMsg.setText("You dont seem to have Open Fortress installed! Click the 'Update' button to install.")
+            errorMsg.setText("You dont seem to have Open Fortress installed! Click the 'Install' button to install.")
             errorMsg.exec_()
             self.pushButton_4.setText('Launch')
             return
