@@ -450,6 +450,7 @@ class Ui_MainWindow(object):
             #hl2 = "{sdk}\hl2_linux".format(sdk = sdkPath)
             #run([hl2, "-game", ofpath])
             run(["xdg-open","steam://rungameid/11677091221058336806"])
+        sleep(5)
         self.label_status.setText('Waiting to Download')
 
 
