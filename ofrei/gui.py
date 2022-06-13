@@ -187,7 +187,8 @@ class Ui_MainWindow(object):
                 errorMsg.setText(
                     "Something's gone wrong! Post the following error in the troubleshooting channel: " + error_message)
                 errorMsg.exec_()
-                exit(1)
+                self.label_status.setText('Waiting to Download')
+                return
             print(version)
             if latest_ver != version and self.verWarned == False:
                 self.verWarned = True
@@ -228,7 +229,8 @@ class Ui_MainWindow(object):
             exitMsg.setWindowTitle("OFToast")
             exitMsg.setText("Done!")
             exitMsg.exec_()
-            exit(1)
+            self.label_status.setText('Waiting to Download')
+            return
         except TimeoutError or httpx.RequestError or ConnectionResetError or httpx.ReadTimeout:
             errorMsg = QMessageBox()
             errorMsg.setWindowTitle("rei?")
@@ -251,7 +253,7 @@ class Ui_MainWindow(object):
             errorMsg.setText(
                 "Something's gone wrong! Post the following error in the troubleshooting channel: " + error_message)
             errorMsg.exec_()
-            exit(1)
+            self.label_status.setText('Waiting to Download')
 
     def clickCancel(self):
         exit(1)
@@ -287,7 +289,9 @@ class Ui_MainWindow(object):
                 errorMsg.setWindowTitle("OFToast")
                 errorMsg.setText("Invalid URL!")
                 errorMsg.exec_()
-                exit(1)
+                #exit(1)
+                self.label_status.setText('Waiting to Download')
+                return
             print(version)
             if latest_ver != version and self.verWarned == False:
                 self.verWarned = True
@@ -326,7 +330,8 @@ class Ui_MainWindow(object):
             exitMsg.setWindowTitle("OFToast")
             exitMsg.setText("Done!")
             exitMsg.exec_()
-            exit(1)
+            #exit(1)
+            self.label_status.setText('Waiting to Download')
         except TimeoutError or httpx.RequestError or ConnectionResetError or httpx.ReadTimeout:
             errorMsg = QMessageBox()
             errorMsg.setWindowTitle("rei?")
@@ -349,11 +354,11 @@ class Ui_MainWindow(object):
             errorMsg.setText(
                 "Something's gone wrong! Post the following error in the troubleshooting channel: " + error_message)
             errorMsg.exec_()
-            exit(1)
-
+            #exit(1)
+            self.label_status.setText('Waiting to Download')
             
     def clickLaunch(self):
-        self.pushButton_4.setText('Launching...')
+        self.label_status.setText('Launching...')
         game_path = Path(self.lineEdit.text())
         installed = os.path.isfile((game_path/Path('.revision')))
         if not installed:
@@ -362,6 +367,7 @@ class Ui_MainWindow(object):
             errorMsg.setText("You dont seem to have Open Fortress installed! Click the 'Update' button to install.")
             errorMsg.exec_()
             self.pushButton_4.setText('Launch')
+            self.label_status.setText('Waiting to Download')
             return
 
         if game_path != -1:
@@ -388,7 +394,7 @@ class Ui_MainWindow(object):
                 errorMsg.setText("You dont seem to have the Source Sdk 2013 Base Multiplayer or Team Fortress 2 installed!" + 
                 "They are a requirement to play Open Fortress.")
                 errorMsg.exec_()
-                self.pushButton_4.setText('Launch')
+                self.label_status.setText('Waiting to Download')
                 return
                 
             if sdkExists == False:
@@ -396,7 +402,7 @@ class Ui_MainWindow(object):
                 errorMsg.setWindowTitle("rei?")
                 errorMsg.setText("You dont seem to have the Source Sdk 2013 Base Multiplayer installed! It is a requirement to play Open Fortress.")
                 errorMsg.exec_()
-                self.pushButton_4.setText('Launch')
+                self.label_status.setText('Waiting to Download')
                 return
                 
             if tf2Exists == False:
@@ -404,7 +410,7 @@ class Ui_MainWindow(object):
                 errorMsg.setWindowTitle("rei?")
                 errorMsg.setText("You dont seem to have Team Fortress 2 installed! It is a requirement to play Open Fortress.")
                 errorMsg.exec_()
-                self.pushButton_4.setText('Launch')
+                self.label_status.setText('Waiting to Download')
                 return
                 
 
@@ -413,7 +419,7 @@ class Ui_MainWindow(object):
             errorMsg.setWindowTitle("rei?")
             errorMsg.setText("You dont seem to have Open Fortress installed! Click the 'Install' button to install.")
             errorMsg.exec_()
-            self.pushButton_4.setText('Launch')
+            self.label_status.setText('Waiting to Download')
             return
         
         if platform.startswith('win32'):
@@ -424,7 +430,7 @@ class Ui_MainWindow(object):
             #hl2 = "{sdk}\hl2_linux".format(sdk = sdkPath)
             #run([hl2, "-game", ofpath])
             run(["xdg-open","steam://rungameid/11677091221058336806"])
-        self.pushButton_4.setText('Launch')
+        self.label_status.setText('Waiting to Download')
 
 
     def downloadWarning(self):
