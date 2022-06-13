@@ -188,6 +188,9 @@ class Ui_MainWindow(object):
                     "Something's gone wrong! Post the following error in the troubleshooting channel: " + error_message)
                 errorMsg.exec_()
                 self.label_status.setText('Waiting to Download')
+                self.pushButton.setDisabled(False)
+                self.pushButton_2.setDisabled(False)
+                self.pushButton_3.setDisabled(False)
                 return
             print(version)
             if latest_ver != version and self.verWarned == False:
@@ -230,6 +233,9 @@ class Ui_MainWindow(object):
             exitMsg.setText("Done!")
             exitMsg.exec_()
             self.label_status.setText('Waiting to Download')
+            self.pushButton.setDisabled(False)
+            self.pushButton_2.setDisabled(False)
+            self.pushButton_3.setDisabled(False)
             return
         except TimeoutError or httpx.RequestError or ConnectionResetError or httpx.ReadTimeout:
             errorMsg = QMessageBox()
@@ -254,6 +260,9 @@ class Ui_MainWindow(object):
                 "Something's gone wrong! Post the following error in the troubleshooting channel: " + error_message)
             errorMsg.exec_()
             self.label_status.setText('Waiting to Download')
+            self.pushButton.setDisabled(False)
+            self.pushButton_2.setDisabled(False)
+            self.pushButton_3.setDisabled(False)
 
     def clickCancel(self):
         exit(1)
@@ -291,6 +300,9 @@ class Ui_MainWindow(object):
                 errorMsg.exec_()
                 #exit(1)
                 self.label_status.setText('Waiting to Download')
+                self.pushButton.setDisabled(False)
+                self.pushButton_2.setDisabled(False)
+                self.pushButton_3.setDisabled(False)
                 return
             print(version)
             if latest_ver != version and self.verWarned == False:
@@ -332,6 +344,10 @@ class Ui_MainWindow(object):
             exitMsg.exec_()
             #exit(1)
             self.label_status.setText('Waiting to Download')
+            self.pushButton.setDisabled(False)
+            self.pushButton_2.setDisabled(False)
+            self.pushButton_3.setDisabled(False)
+            return
         except TimeoutError or httpx.RequestError or ConnectionResetError or httpx.ReadTimeout:
             errorMsg = QMessageBox()
             errorMsg.setWindowTitle("rei?")
@@ -356,6 +372,10 @@ class Ui_MainWindow(object):
             errorMsg.exec_()
             #exit(1)
             self.label_status.setText('Waiting to Download')
+            self.pushButton.setDisabled(False)
+            self.pushButton_2.setDisabled(False)
+            self.pushButton_3.setDisabled(False)
+            return
             
     def clickLaunch(self):
         self.label_status.setText('Launching...')
