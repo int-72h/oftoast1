@@ -131,11 +131,8 @@ class Ui_MainWindow(object):
         self.label_2.setText(_translate("MainWindow", "Download URL:"))
         self.label_4.setText(_translate("MainWindow", "Install Folder:"))
         self.label_status.setText(_translate("MainWindow", "Waiting to Download"))
-        self.lineEdit_2.setText(_translate("MainWindow", "https://toast.openfortress.fun/toast"))
-        if os.path.isfile((game_path/Path('.revision'))):
-            self.pushButton.setText(_translate("MainWindow", "Update"))
-        else:
-            self.pushButton.setText(_translate("MainWindow", "Install"))
+        self.lineEdit_2.setText(_translate("MainWindow", "https://toast.openfortress.fun/toast"))            
+        self.pushButton.setText(_translate("MainWindow", "Install"))
         self.pushButton_2.setText(_translate("MainWindow", "Cancel"))
         self.pushButton_3.setText(_translate("MainWindow", "Verify"))
         self.label_3.setText(_translate("MainWindow", "Installed Revision: None"))
@@ -552,7 +549,10 @@ def existing_game_check(ui, MainWindow):
         sdk_download(ofpath.parents[1])
         revision = get_installed_revision(ofpath)
         if revision >= 0:
+            _translate = QtCore.QCoreApplication.translate
             ui.label_3.setText("Installed Revision: " + str(revision))
+            ui.pushButton.setText(_translate("MainWindow", "Update"))
+            
         ui.lineEdit.setText(str(ofpath))
 
 
