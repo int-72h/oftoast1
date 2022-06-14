@@ -1,12 +1,12 @@
 from setuptools import setup
 
 setup(
-    name='oflauncher-rei',
+    name='openfortress-jam',
     version='0.1.4',
-    packages=['ofrei'],
+    packages=['ofjam'],
     url='https://www.openfortress.fun',
     license='GPLv3',
-    author='int',
+    author='int et al.',
     author_email='',
     description=''
 )
