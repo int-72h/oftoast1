@@ -15,7 +15,7 @@ from PyQt5.QtGui import QPalette, QColor, QFont
 import sys
 
 global version
-version = '0.2.4'
+version = '0.2.5'
 user_agent = 'toast_ua'
 
 
@@ -104,10 +104,17 @@ class Ui_MainWindow(object):
         self.pushButton_2.setGeometry(QtCore.QRect(580, 430, 90, 28))
         self.pushButton_2.setObjectName("pushButton_2")
         self.pushButton_2.clicked.connect(self.clickCancel)
+        self.label_3 = QtWidgets.QLabel(self.centralwidget)
+        self.label_3.setGeometry(QtCore.QRect(110, 133, 211, 20))
         self.pushButton_3 = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton_3.setGeometry(QtCore.QRect(200, 430, 90, 28))
+
         self.pushButton_3.setObjectName("pushButton_3")
         self.pushButton_3.clicked.connect(self.clickVerify)
+        self.pushButton_4 = QtWidgets.QPushButton(self.centralwidget)
+        self.pushButton_4.setGeometry(QtCore.QRect(300, 430, 90, 28))
+        self.pushButton_4.setObjectName("pushButton_4")
+        self.pushButton_4.clicked.connect(self.clickLaunch)
         self.label_3 = QtWidgets.QLabel(self.centralwidget)
         self.label_3.setGeometry(QtCore.QRect(100, 250, 211, 20))
         #self.label_3.setAlignment(QtCore.Qt.AlignCenter)
@@ -124,11 +131,12 @@ class Ui_MainWindow(object):
         self.label_2.setText(_translate("MainWindow", "Download URL:"))
         self.label_4.setText(_translate("MainWindow", "Install Folder:"))
         self.label_status.setText(_translate("MainWindow", "Waiting to Download"))
-        self.lineEdit_2.setText(_translate("MainWindow", "https://toast.openfortress.fun/toast"))
+        self.lineEdit_2.setText(_translate("MainWindow", "https://toast.openfortress.fun/toast"))            
         self.pushButton.setText(_translate("MainWindow", "Install"))
         self.pushButton_2.setText(_translate("MainWindow", "Cancel"))
         self.pushButton_3.setText(_translate("MainWindow", "Verify"))
         self.label_3.setText(_translate("MainWindow", "Installed Revision: None"))
+        self.pushButton_4.setText(_translate("MainWindow", "Launch"))
 
     def clickBrowse(self):
         temp = self.lineEdit.text()
@@ -139,10 +147,8 @@ class Ui_MainWindow(object):
             self.lineEdit.setText(gamepath)
         revision = get_installed_revision(Path(self.lineEdit.text()))
         if revision >= 0:
-            self.pushButton.setText("Update")
             self.label_3.setText("Installed Revision: " + str(revision))
         else:
-            self.pushButton.setText("Install")
             self.label_3.setText("Installed Revision: None")
 
     def clickUpdate(self):
@@ -177,11 +183,15 @@ class Ui_MainWindow(object):
                 errorMsg.exec_()
                 error_message = traceback.format_exc()
                 errorMsg = QMessageBox()
-                errorMsg.setWindowTitle("jar's broke, jams gone everywhere")
+                errorMsg.setWindowTitle("rei?")
                 errorMsg.setText(
                     "Something's gone wrong! Post the following error in the troubleshooting channel: " + error_message)
                 errorMsg.exec_()
-                exit(1)
+                self.label_status.setText('Waiting to Download')
+                self.pushButton.setDisabled(False)
+                self.pushButton_2.setDisabled(False)
+                self.pushButton_3.setDisabled(False)
+                return
             print(version)
             if latest_ver != version and self.verWarned == False:
                 self.verWarned = True
@@ -222,33 +232,41 @@ class Ui_MainWindow(object):
             exitMsg.setWindowTitle("OFToast")
             exitMsg.setText("Done!")
             exitMsg.exec_()
-            exit(1)
+            self.label_status.setText('Waiting to Download')
+            self.pushButton.setDisabled(False)
+            self.pushButton_2.setDisabled(False)
+            self.pushButton_3.setDisabled(False)
+            return
         except TimeoutError or httpx.RequestError or ConnectionResetError or httpx.ReadTimeout:
             errorMsg = QMessageBox()
-            errorMsg.setWindowTitle("jar's broke, jams gone everywhere")
+            errorMsg.setWindowTitle("rei?")
             errorMsg.setText("The server you've connected to is down! Try again later.")
             errorMsg.exec_()
         except TimeoutError or httpx.RequestError or ConnectionResetError:
             errorMsg = QMessageBox()
-            errorMsg.setWindowTitle("jar's broke, jams gone everywhere")
+            errorMsg.setWindowTitle("rei?")
             errorMsg.setText("The server you've connected to is down! Try again later.")
             errorMsg.exec_()
         except Exception as e:
             error_message = traceback.format_exc()
             if 'timeout' or 'reset' in error_message:
                 errorMsg = QMessageBox()
-                errorMsg.setWindowTitle("jar's broke, jams gone everywhere")
+                errorMsg.setWindowTitle("rei?")
                 errorMsg.setText("The server you've connected to is down! Try again later.")
                 errorMsg.exec_()
             errorMsg = QMessageBox()
-            errorMsg.setWindowTitle("jar's broke, jams gone everywhere")
+            errorMsg.setWindowTitle("rei?")
             errorMsg.setText(
                 "Something's gone wrong! Post the following error in the troubleshooting channel: " + error_message)
             errorMsg.exec_()
-            exit(1)
+            self.label_status.setText('Waiting to Download')
+            self.pushButton.setDisabled(False)
+            self.pushButton_2.setDisabled(False)
+            self.pushButton_3.setDisabled(False)
 
     def clickCancel(self):
         exit(1)
+
     
     def clickVerify(self):
         global version
@@ -280,7 +298,12 @@ class Ui_MainWindow(object):
                 errorMsg.setWindowTitle("OFToast")
                 errorMsg.setText("Invalid URL!")
                 errorMsg.exec_()
-                exit(1)
+                #exit(1)
+                self.label_status.setText('Waiting to Download')
+                self.pushButton.setDisabled(False)
+                self.pushButton_2.setDisabled(False)
+                self.pushButton_3.setDisabled(False)
+                return
             print(version)
             if latest_ver != version and self.verWarned == False:
                 self.verWarned = True
@@ -319,30 +342,118 @@ class Ui_MainWindow(object):
             exitMsg.setWindowTitle("OFToast")
             exitMsg.setText("Done!")
             exitMsg.exec_()
-            exit(1)
+            #exit(1)
+            self.label_status.setText('Waiting to Download')
+            self.pushButton.setDisabled(False)
+            self.pushButton_2.setDisabled(False)
+            self.pushButton_3.setDisabled(False)
+            return
         except TimeoutError or httpx.RequestError or ConnectionResetError or httpx.ReadTimeout:
             errorMsg = QMessageBox()
-            errorMsg.setWindowTitle("jar's broke, jams gone everywhere")
+            errorMsg.setWindowTitle("rei?")
             errorMsg.setText("The server you've connected to is down! Try again later.")
             errorMsg.exec_()
         except TimeoutError or httpx.RequestError or ConnectionResetError:
             errorMsg = QMessageBox()
-            errorMsg.setWindowTitle("jar's broke, jams gone everywhere")
+            errorMsg.setWindowTitle("rei?")
             errorMsg.setText("The server you've connected to is down! Try again later.")
             errorMsg.exec_()
         except Exception as e:
             error_message = traceback.format_exc()
             if 'timeout' or 'reset' in error_message:
                 errorMsg = QMessageBox()
-                errorMsg.setWindowTitle("jar's broke, jams gone everywhere")
+                errorMsg.setWindowTitle("rei?")
                 errorMsg.setText("The server you've connected to is down! Try again later.")
                 errorMsg.exec_()
             errorMsg = QMessageBox()
-            errorMsg.setWindowTitle("jar's broke, jams gone everywhere")
+            errorMsg.setWindowTitle("rei?")
             errorMsg.setText(
                 "Something's gone wrong! Post the following error in the troubleshooting channel: " + error_message)
             errorMsg.exec_()
-            exit(1)
+            #exit(1)
+            self.label_status.setText('Waiting to Download')
+            self.pushButton.setDisabled(False)
+            self.pushButton_2.setDisabled(False)
+            self.pushButton_3.setDisabled(False)
+            return
+            
+    def clickLaunch(self):
+        self.label_status.setText('Launching...')
+        game_path = Path(self.lineEdit.text())
+        installed = os.path.isfile((game_path/Path('.revision')))
+        if not installed:
+            errorMsg = QMessageBox()
+            errorMsg.setWindowTitle("rei?")
+            errorMsg.setText("You dont seem to have Open Fortress installed! Click the 'Update' button to install.")
+            errorMsg.exec_()
+            self.pushButton_4.setText('Launch')
+            self.label_status.setText('Waiting to Download')
+            return
+
+        if game_path != -1:
+            library_folders = vdf.load(open(game_path.parents[1] / Path('libraryfolders.vdf')))['libraryfolders']
+            sdkExists = False
+            tf2Exists = False
+            for x in library_folders:
+                if ('243750' in library_folders[x]['apps'].keys()):
+                    #print(library_folders[x]['path'])
+                    sdkPath = (library_folders[x]['path'] / Path('steamapps') / Path('common') / Path('Source SDK Base 2013 Multiplayer'))
+                    if os.path.isdir((sdkPath / Path('bin'))):
+                    	sdkExists = True
+            for x in library_folders:
+                if ('440' in library_folders[x]['apps'].keys()):
+                    #print(library_folders[x]['path'])
+                    tf2Path = (library_folders[x]['path'] / Path('steamapps') / Path('common') / Path('Team Fortress 2'))
+                    if os.path.isdir((tf2Path / Path('bin'))):
+                    	tf2Exists = True                    	
+
+                    	
+            if sdkExists == False and tf2Exists == False:
+                errorMsg = QMessageBox()
+                errorMsg.setWindowTitle("rei?")
+                errorMsg.setText("You dont seem to have the Source Sdk 2013 Base Multiplayer or Team Fortress 2 installed!" + 
+                "They are a requirement to play Open Fortress.")
+                errorMsg.exec_()
+                self.label_status.setText('Waiting to Download')
+                return
+                
+            if sdkExists == False:
+                errorMsg = QMessageBox()
+                errorMsg.setWindowTitle("rei?")
+                errorMsg.setText("You dont seem to have the Source Sdk 2013 Base Multiplayer installed! It is a requirement to play Open Fortress.")
+                errorMsg.exec_()
+                self.label_status.setText('Waiting to Download')
+                return
+                
+            if tf2Exists == False:
+                errorMsg = QMessageBox()
+                errorMsg.setWindowTitle("rei?")
+                errorMsg.setText("You dont seem to have Team Fortress 2 installed! It is a requirement to play Open Fortress.")
+                errorMsg.exec_()
+                self.label_status.setText('Waiting to Download')
+                return
+                
+
+        else:
+            errorMsg = QMessageBox()
+            errorMsg.setWindowTitle("rei?")
+            errorMsg.setText("You dont seem to have Open Fortress installed! Click the 'Install' button to install.")
+            errorMsg.exec_()
+            self.label_status.setText('Waiting to Download')
+            return
+        
+        if platform.startswith('win32'):
+            #hl2 = "{sdk}\hl2.exe".format(sdk = sdkPath)
+            #run([hl2, "-game", ofpath], shell=True)
+            run(["start", "steam://rungameid/11677091221058336806"], shell=True)
+        else:
+            #hl2 = "{sdk}\hl2_linux".format(sdk = sdkPath)
+            #run([hl2, "-game", ofpath])
+            run(["xdg-open","steam://rungameid/11677091221058336806"])
+        time.sleep(5)
+        self.label_status.setText('Waiting to Download')
+
+
     def downloadWarning(self):
         if self.wasWarned==False:
             self.wasWarned=True
@@ -350,6 +461,7 @@ class Ui_MainWindow(object):
             warnMsg.setWindowTitle("Warning")
             warnMsg.setText("Changing the Download URL is not advised. Only change it if you know what you're doing.")
             warnMsg.exec_()
+
 
 
 def get_threads(url):
@@ -464,8 +576,10 @@ def existing_game_check(ui, MainWindow):
         sdk_download(ofpath.parents[1])
         revision = get_installed_revision(ofpath)
         if revision >= 0:
-            ui.pushButton.setText("Update")
+            _translate = QtCore.QCoreApplication.translate
             ui.label_3.setText("Installed Revision: " + str(revision))
+            ui.pushButton.setText(_translate("MainWindow", "Update"))
+            
         ui.lineEdit.setText(str(ofpath))
 
 
