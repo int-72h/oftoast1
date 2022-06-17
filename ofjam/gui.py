@@ -231,7 +231,7 @@ class Ui_MainWindow(object):
             exitMsg = QMessageBox()
             exitMsg.setWindowTitle("OFToast")
             # exitMsg.setText("Done!") // This gets called in clickVerify anyways. So no need for it to appear twice.
-            exitMsg.exec_()
+            # exitMsg.exec_()
             self.label_status.setText('Waiting to Download')
             self.pushButton.setDisabled(False)
             self.pushButton_2.setDisabled(False)
@@ -478,8 +478,8 @@ def work(arr):
     tries = 0
     try:
         exists = False
-        if tries != 10:
-            while exists == False:
+        while exists == False:
+            if tries != 10:
                 wasProblematic = False
                 goodDownload = False
                 hasher = hashlib.md5()
@@ -507,8 +507,8 @@ def work(arr):
                     exists = True
                 else:
                     print("file hasn't downloaded...")
-        else:
-            raise Exception
+            else:
+                raise Exception
     except Exception:
         tries += 1
 
