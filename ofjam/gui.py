@@ -230,7 +230,7 @@ class Ui_MainWindow(object):
             self.clickVerify()
             exitMsg = QMessageBox()
             exitMsg.setWindowTitle("OFToast")
-            exitMsg.setText("Done!")
+            # exitMsg.setText("Done!") // This gets called in clickVerify anyways. So no need for it to appear twice.
             exitMsg.exec_()
             self.label_status.setText('Waiting to Download')
             self.pushButton.setDisabled(False)
@@ -475,37 +475,42 @@ def get_latest_ver(url):
 
 
 def work(arr):
+    tries = 0
     try:
         exists = False
-        while exists == False:
-            wasProblematic = False
-            goodDownload = False
-            hasher = hashlib.md5()
-            while goodDownload == False:
-                resp = arr[3].get(arr[0])
-                hasher.update(resp.content)
-                hodl = hasher.hexdigest()
-                #print("Hash of file:", hodl)
-                #print("Compared to stored hash of:", arr[2])
-                if hodl == arr[2]:
-                    goodDownload = True
+        if tries != 10:
+            while exists == False:
+                wasProblematic = False
+                goodDownload = False
+                hasher = hashlib.md5()
+                while goodDownload == False:
+                    resp = arr[3].get(arr[0])
+                    hasher.update(resp.content)
+                    hodl = hasher.hexdigest()
+                    #print("Hash of file:", hodl)
+                    #print("Compared to stored hash of:", arr[2])
+                    if hodl == arr[2]:
+                        goodDownload = True
+                    else:
+                        if wasProblematic == False:
+                            print("Hash failed for file",
+                                  arr[1], "Retrying...")
+                        wasProblematic = True
+                        hasher = hashlib.md5()  # reset hasher
+                        goodDownload = False
+                if wasProblematic:
+                    print(arr[1], "was able to finish downloading!")
+                file = open(arr[1], "wb+")
+                file.write(resp.content)
+                file.close()
+                if arr[1].exists():
+                    exists = True
                 else:
-                    if wasProblematic == False:
-                        print("Hash failed for file", arr[1], "Retrying...")
-                    wasProblematic = True
-                    hasher = hashlib.md5() #reset hasher
-                    goodDownload = False
-            if wasProblematic:
-                print(arr[1], "was able to finish downloading!")
-            file = open(arr[1], "wb+")
-            file.write(resp.content)
-            file.close()
-            if arr[1].exists():
-                exists = True
-            else:
-                print("file hasn't downloaded...")
-    except:
-        work(arr) #hate this workaround
+                    print("file hasn't downloaded...")
+        else:
+            raise Exception
+    except Exception:
+        tries += 1
 
 def work_verif(arr):
     try:
