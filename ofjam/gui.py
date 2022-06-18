@@ -7,7 +7,7 @@ import httpx
 import traceback
 import shutil
 import hashlib
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE,call
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import QObject, pyqtSignal, QEvent
 from PyQt5.QtWidgets import QApplication, QMessageBox, QFileDialog
@@ -405,17 +405,26 @@ def work_verif(arr):
 
 
 def ariabar(arr, self, app, num_cpus=16):
-    x = open('todl.txt', 'w')
+    if getattr(sys, "frozen", False):
+        # PyInstaller executable
+        toasty = str(Path(sys._MEIPASS).resolve().joinpath("todl.txt"))
+    else:
+        # Raw .py file
+        toasty = "todl.txt"
+    x = open(toasty, 'w')
     length = len(arr)
     z = 0
     for a in arr:
         x.write('{}\n out={}\n checksum=md5={}\n'.format(a[0], a[1], a[2]))
     x.close()
-    fp = Popen('aria2c -i todl.txt -d / -x {} -j 100 -m 0 -V -U murse/0.0.2'.format(num_cpus), shell=True, stdout=PIPE)
+    if sys.platform.startswith('win32'):
+        fp = Popen('.\\aria2c.exe -i {} -d C: -x {} -j 100 -m 0 -V -U murse/0.0.2'.format(toasty, num_cpus), shell=True,
+                   stdin=PIPE, stdout=PIPE, universal_newlines=True)
+    else:
+        fp = Popen('aria2c -i {} -d / -x {} -j 100 -m 0 -V -U murse/0.0.2'.format(toasty,num_cpus), shell=True,stdin=PIPE, stdout=PIPE, universal_newlines=True)
     done = False
     while not done:
-        for line in fp.stdout:
-            l = line.decode(encoding="utf-8", errors='ignore')
+        for l in fp.stdout:
             if 'Verification finished successfully.' in l:
                 z = z + 1
                 self.progressBar.setValue(z)
@@ -486,6 +495,26 @@ def set_theme(app, MainWindow):
     palette.setColor(QPalette.HighlightedText, QColor(0, 0, 0))
     app.setPalette(palette)
 
+def ariacheck():
+    if sys.platform.startswith('win32'):
+        if getattr(sys, "frozen", False):
+            # PyInstaller executable
+            toasty = str(Path(sys._MEIPASS).resolve().joinpath("aria2c.exe"))
+        else:
+            # Raw .py file
+            toasty = "aria2c.exe"
+        rc = call([toasty,'-v'])
+        if rc != 0:
+            print('ok somethings gone wrong')
+    else:
+        rc = call(['which','aria2c'])
+        if rc != 0:
+            warnMsg = QMessageBox()
+            warnMsg.setWindowTitle("OFToast")
+            warnMsg.setText(
+                "You need to install aria2 from your package manager. OFToast won't function without it.")
+            warnMsg.setStandardButtons(QMessageBox.Ok)
+            sys.exit()
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
@@ -493,6 +522,7 @@ if __name__ == "__main__":
     ui = Ui_MainWindow()
     set_theme(app, MainWindow)
     ui.setupUi(app, MainWindow)
+    ariacheck()
     existing_game_check(ui, MainWindow)
     MainWindow.show()
 
