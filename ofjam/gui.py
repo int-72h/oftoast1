@@ -7,7 +7,7 @@ import httpx
 import traceback
 import shutil
 import hashlib
-
+from subprocess import Popen, PIPE
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import QObject, pyqtSignal, QEvent
 from PyQt5.QtWidgets import QApplication, QMessageBox, QFileDialog
@@ -19,7 +19,7 @@ version = '0.2.4'
 user_agent = 'toast_ua'
 
 
-def clickable(widget): # make this function global
+def clickable(widget):  # make this function global
     class Filter(QObject):
         clicked = pyqtSignal()
 
@@ -29,13 +29,16 @@ def clickable(widget): # make this function global
                 return True
             else:
                 return False
+
     filter = Filter(widget)
     widget.installEventFilter(filter)
     return filter.clicked
 
+
 class Ui_MainWindow(object):
     wasWarned = False
     verWarned = False
+
     def setupUi(self, app, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.setEnabled(True)
@@ -72,10 +75,10 @@ class Ui_MainWindow(object):
         self.lineEdit.setGeometry(QtCore.QRect(100, 330, 421, 28))
         self.lineEdit.setObjectName("lineEdit")
         self.lineEdit.setReadOnly(True)
-        #self.lineEdit.setDisabled(True)
+        # self.lineEdit.setDisabled(True)
         self.label_2 = QtWidgets.QLabel(self.centralwidget)
         self.label_2.setGeometry(QtCore.QRect(100, 360, 121, 31))
-        #self.label_2.setAlignment(QtCore.Qt.AlignCenter)
+        # self.label_2.setAlignment(QtCore.Qt.AlignCenter)
         self.label_2.setObjectName("label_2")
         self.lineEdit_2 = QtWidgets.QLineEdit(self.centralwidget)
         self.lineEdit_2.setGeometry(QtCore.QRect(100, 390, 291, 28))
@@ -110,7 +113,7 @@ class Ui_MainWindow(object):
         self.pushButton_3.clicked.connect(self.clickVerify)
         self.label_3 = QtWidgets.QLabel(self.centralwidget)
         self.label_3.setGeometry(QtCore.QRect(100, 250, 211, 20))
-        #self.label_3.setAlignment(QtCore.Qt.AlignCenter)
+        # self.label_3.setAlignment(QtCore.Qt.AlignCenter)
         self.label_3.setObjectName("label_3")
         MainWindow.setCentralWidget(self.centralwidget)
 
@@ -148,7 +151,7 @@ class Ui_MainWindow(object):
     def clickUpdate(self):
         global version
         try:
-            #self.pushButton.setText('Updating...')
+            # self.pushButton.setText('Updating...')
             self.label_status.setText('Updating...')
             self.pushButton.setDisabled(True)
             self.pushButton_2.setDisabled(True)
@@ -194,7 +197,9 @@ class Ui_MainWindow(object):
             revisions = fetch_revisions(url, installed_revision, latest_revision)
             changes = replay_changes(revisions)
             writes = list(filter(lambda x: x["type"] == TYPE_WRITE, changes))
-            client = httpx.Client(headers={'user-agent': user_agent, 'Connection': 'keep-alive', 'Cache-Control': 'max-age=0'}, http2=True)
+            client = httpx.Client(
+                headers={'user-agent': user_agent, 'Connection': 'keep-alive', 'Cache-Control': 'max-age=0'},
+                http2=True)
             todl = [[url + "objects/" + x["object"], game_path / x["path"], x["hash"], client] for x in writes]
             try:
                 os.remove(game_path / ".revision")
@@ -212,11 +217,11 @@ class Ui_MainWindow(object):
                     os.mkdir(game_path / x["path"], 0o777)
                 except FileExistsError:
                     pass
-            #self.pushButton.setText('Downloading...')
-            pbar_sg(todl, self, app, num_threads)
+            # self.pushButton.setText('Downloading...')
+            ariabar(todl, self, app, num_threads)
             (game_path / ".revision").touch(0o777)
             (game_path / ".revision").write_text(str(latest_revision))
-            #now verify just in case
+            # now verify just in case
             self.clickVerify()
             exitMsg = QMessageBox()
             exitMsg.setWindowTitle("OFToast")
@@ -249,11 +254,11 @@ class Ui_MainWindow(object):
 
     def clickCancel(self):
         exit(1)
-    
+
     def clickVerify(self):
         global version
         try:
-            #self.pushButton_3.setText('Verifying...')
+            # self.pushButton_3.setText('Verifying...')
             self.label_status.setText('Verifying...')
             self.pushButton.setDisabled(True)
             self.pushButton_2.setDisabled(True)
@@ -261,7 +266,7 @@ class Ui_MainWindow(object):
             app.processEvents()
             game_path = Path(self.lineEdit.text())
             url = self.lineEdit_2.text()
-            response = httpx.get(url, headers={'user-agent': user_agent},follow_redirects=True)
+            response = httpx.get(url, headers={'user-agent': user_agent}, follow_redirects=True)
             resUrl = response.url
             url = "https://" + resUrl.host + "/toast/"
             print("Server Selected: " + url)
@@ -270,7 +275,7 @@ class Ui_MainWindow(object):
                     Path.mkdir(game_path / Path('open_fortress'))
                 except FileExistsError:
                     pass
-            installed_revision = -1 # = get_installed_revision(game_path)
+            installed_revision = -1  # = get_installed_revision(game_path)
             try:
                 num_threads = get_threads(url)
                 latest_ver = get_latest_ver(url)
@@ -293,7 +298,9 @@ class Ui_MainWindow(object):
             revisions = fetch_revisions(url, installed_revision, latest_revision)
             changes = replay_changes(revisions)
             writes = list(filter(lambda x: x["type"] == TYPE_WRITE, changes))
-            client = httpx.Client(headers={'user-agent': user_agent, 'Connection': 'keep-alive', 'Cache-Control': 'max-age=0'}, http2=True)
+            client = httpx.Client(
+                headers={'user-agent': user_agent, 'Connection': 'keep-alive', 'Cache-Control': 'max-age=0'},
+                http2=True)
             todl = [[url + "objects/" + x["object"], game_path / x["path"], x["hash"], client] for x in writes]
             try:
                 os.remove(game_path / ".revision")
@@ -311,8 +318,8 @@ class Ui_MainWindow(object):
                     os.mkdir(game_path / x["path"], 0o777)
                 except FileExistsError:
                     pass
-            #self.pushButton_3.setText('Verifying...')
-            pbar_sg_verif(todl, self, app, num_threads)
+            # self.pushButton_3.setText('Verifying...')
+            pbar_qt_verif(todl, self, app, num_threads)
             (game_path / ".revision").touch(0o777)
             (game_path / ".revision").write_text(str(latest_revision))
             exitMsg = QMessageBox()
@@ -343,9 +350,10 @@ class Ui_MainWindow(object):
                 "Something's gone wrong! Post the following error in the troubleshooting channel: " + error_message)
             errorMsg.exec_()
             exit(1)
+
     def downloadWarning(self):
-        if self.wasWarned==False:
-            self.wasWarned=True
+        if self.wasWarned == False:
+            self.wasWarned = True
             warnMsg = QMessageBox()
             warnMsg.setWindowTitle("Warning")
             warnMsg.setText("Changing the Download URL is not advised. Only change it if you know what you're doing.")
@@ -361,39 +369,18 @@ def get_latest_ver(url):
     r = httpx.get(url + "/reiversion", headers={'user-agent': user_agent}, follow_redirects=True)
     return r.text.strip()
 
-
 def work(arr):
-    try:
-        exists = False
-        while exists == False:
-            wasProblematic = False
-            goodDownload = False
-            hasher = hashlib.md5()
-            while goodDownload == False:
-                resp = arr[3].get(arr[0])
-                hasher.update(resp.content)
-                hodl = hasher.hexdigest()
-                #print("Hash of file:", hodl)
-                #print("Compared to stored hash of:", arr[2])
-                if hodl == arr[2]:
-                    goodDownload = True
-                else:
-                    if wasProblematic == False:
-                        print("Hash failed for file", arr[1], "Retrying...")
-                    wasProblematic = True
-                    hasher = hashlib.md5() #reset hasher
-                    goodDownload = False
-            if wasProblematic:
-                print(arr[1], "was able to finish downloading!")
-            file = open(arr[1], "wb+")
-            file.write(resp.content)
-            file.close()
-            if arr[1].exists():
-                exists = True
-            else:
-                print("file hasn't downloaded...")
-    except:
-        work(arr) #hate this workaround
+    cmd = "aria2c {} -o \"{}\" -d / --checksum=md5={} -V -U murse/0.0.2".format(arr[0], arr[1], arr[2])
+    done = False
+    while not done:
+        fp = Popen(cmd, shell=True, stdout=PIPE)
+        fp.wait()
+        content = [x.decode(encoding="utf-8", errors="ignore") for x in fp.stdout]
+        if 'OK' in content[-1]:
+            done = True
+        else:
+            print(content[-1])
+
 
 def work_verif(arr):
     try:
@@ -405,7 +392,7 @@ def work_verif(arr):
             hasher.update(fcontents)
             hodl = hasher.hexdigest()
             if hodl == arr[2]:
-                #good :)
+                # good :)
                 pass
             else:
                 print(arr[1], "failed verification, redownloading...")
@@ -417,18 +404,27 @@ def work_verif(arr):
         work_verif(arr)
 
 
-def pbar_sg(iter, self, app, num_cpus=16):
-    length = len(iter)
+def ariabar(arr, self, app, num_cpus=16):
+    x = open('todl.txt', 'w')
+    length = len(arr)
     z = 0
-    executor = ThreadPoolExecutor(num_cpus)
-    futures = {executor.submit(work, x): x for x in iter}
-    for _ in as_completed(futures):
-        z = z + 1
-        self.progressBar.setValue(z)
-        self.progressBar.setMaximum(length)
-        app.processEvents()
+    for a in arr:
+        x.write('{}\n out={}\n checksum=md5={}\n'.format(a[0], a[1], a[2]))
+    x.close()
+    fp = Popen('aria2c -i todl.txt -d / -x {} -j 100 -m 0 -V -U murse/0.0.2'.format(num_cpus), shell=True, stdout=PIPE)
+    done = False
+    while not done:
+        for line in fp.stdout:
+            l = line.decode(encoding="utf-8", errors='ignore')
+            if 'Verification finished successfully.' in l:
+                z = z + 1
+                self.progressBar.setValue(z)
+                self.progressBar.setMaximum(length)
+                app.processEvents()
+            if "(OK):download completed" in l:
+                done = True
 
-def pbar_sg_verif(iter, self, app, num_cpus=16):
+def pbar_qt_verif(iter, self, app, num_cpus=16):
     length = len(iter)
     z = 0
     executor = ThreadPoolExecutor(num_cpus)
@@ -444,19 +440,22 @@ def get_revision(url: str, revision: int):
     r = httpx.get(url + "/" + str(revision), headers={'user-agent': user_agent}, follow_redirects=True)
     return json.loads(r.text)
 
-def fetch_latest_revision(url):
-	#r = urllib.request.urlopen()
-	r = httpx.get(url + "revisions/latest", headers={'user-agent': user_agent}, follow_redirects=True)
-	return int(r.text)
 
-def fetch_revisions(url,first,last):
-	revisions = []
-	for x in range(first+1, last+1):
-		if not (x < 0):
-			#r = urllib.request.urlopen(url + "revisions/" + str(x))
-			r = httpx.get(url + "revisions/" + str(x), headers={'user-agent': user_agent}, follow_redirects=True)
-			revisions.append(json.loads(r.text))
-	return revisions
+def fetch_latest_revision(url):
+    # r = urllib.request.urlopen()
+    r = httpx.get(url + "revisions/latest", headers={'user-agent': user_agent}, follow_redirects=True)
+    return int(r.text)
+
+
+def fetch_revisions(url, first, last):
+    revisions = []
+    for x in range(first + 1, last + 1):
+        if not (x < 0):
+            # r = urllib.request.urlopen(url + "revisions/" + str(x))
+            r = httpx.get(url + "revisions/" + str(x), headers={'user-agent': user_agent}, follow_redirects=True)
+            revisions.append(json.loads(r.text))
+    return revisions
+
 
 def existing_game_check(ui, MainWindow):
     ofpath = getpath()
