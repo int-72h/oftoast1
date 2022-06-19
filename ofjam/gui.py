@@ -197,10 +197,7 @@ class Ui_MainWindow(object):
             revisions = fetch_revisions(url, installed_revision, latest_revision)
             changes = replay_changes(revisions)
             writes = list(filter(lambda x: x["type"] == TYPE_WRITE, changes))
-            client = httpx.Client(
-                headers={'user-agent': user_agent, 'Connection': 'keep-alive', 'Cache-Control': 'max-age=0'},
-                http2=True)
-            todl = [[url + "objects/" + x["object"], game_path / x["path"], x["hash"], client] for x in writes]
+            todl = [[url + "objects/" + x["object"], game_path / x["path"], x["hash"]] for x in writes]
             try:
                 os.remove(game_path / ".revision")
             except FileNotFoundError:
@@ -218,9 +215,18 @@ class Ui_MainWindow(object):
                 except FileExistsError:
                     pass
             # self.pushButton.setText('Downloading...')
-            ariabar(todl, self, app, num_threads)
+            errs = ariabar(todl, self, app, num_threads)
             (game_path / ".revision").touch(0o777)
             (game_path / ".revision").write_text(str(latest_revision))
+            if errs != []:
+                error_message = '\n'.join(errs)
+                errorMsg = QMessageBox()
+                errorMsg.setWindowTitle("Toast Meditation")
+                errorMsg.setText(
+                    "Something's gone wrong with the downloading! Post the following error(s) in the troubleshooting "
+                    "channel: " + error_message)
+                errorMsg.exec_()
+                exit(1)
             # now verify just in case
             self.clickVerify()
             exitMsg = QMessageBox()
@@ -230,25 +236,25 @@ class Ui_MainWindow(object):
             exit(1)
         except TimeoutError or httpx.RequestError or ConnectionResetError or httpx.ReadTimeout:
             errorMsg = QMessageBox()
-            errorMsg.setWindowTitle("jar's broke, jams gone everywhere")
+            errorMsg.setWindowTitle("hmm... raspberry.")
             errorMsg.setText("The server you've connected to is down! Try again later.")
             errorMsg.exec_()
         except TimeoutError or httpx.RequestError or ConnectionResetError:
             errorMsg = QMessageBox()
-            errorMsg.setWindowTitle("jar's broke, jams gone everywhere")
+            errorMsg.setWindowTitle("hmm... raspberry.")
             errorMsg.setText("The server you've connected to is down! Try again later.")
             errorMsg.exec_()
         except Exception as e:
             error_message = traceback.format_exc()
             if 'timeout' or 'reset' in error_message:
                 errorMsg = QMessageBox()
-                errorMsg.setWindowTitle("jar's broke, jams gone everywhere")
+                errorMsg.setWindowTitle("I actually prefer marmalade.")
                 errorMsg.setText("The server you've connected to is down! Try again later.")
                 errorMsg.exec_()
             errorMsg = QMessageBox()
-            errorMsg.setWindowTitle("jar's broke, jams gone everywhere")
+            errorMsg.setWindowTitle("Uh oh.")
             errorMsg.setText(
-                "Something's gone wrong! Post the following error in the troubleshooting channel: " + error_message)
+                "Something's gone catastrophically wrong! Post the following error in the troubleshooting channel: " + error_message)
             errorMsg.exec_()
             exit(1)
 
@@ -408,9 +414,11 @@ def ariabar(arr, self, app, num_cpus=16):
     if getattr(sys, "frozen", False):
         # PyInstaller executable
         toasty = str(Path(sys._MEIPASS).resolve().joinpath("todl.txt"))
+        ariapath = str(Path(sys._MEIPASS).resolve().joinpath("aria2c.exe"))
     else:
         # Raw .py file
         toasty = "todl.txt"
+        ariapath = 'aria2c.exe'
     x = open(toasty, 'w')
     length = len(arr)
     z = 0
@@ -418,13 +426,15 @@ def ariabar(arr, self, app, num_cpus=16):
         x.write('{}\n out={}\n checksum=md5={}\n'.format(a[0], a[1], a[2]))
     x.close()
     if sys.platform.startswith('win32'):
-        fp = Popen('.\\aria2c.exe -i {} -d C: -x {} -j 100 -m 0 -V -U murse/0.0.2'.format(toasty, num_cpus), shell=True,
+        fp = Popen('{} -i {} -d C: -x {} -j 100 -m 0 -V -U {}/{}'.format(ariapath,toasty, num_cpus,user_agent,version), shell=True,
                    stdin=PIPE, stdout=PIPE, universal_newlines=True)
     else:
-        fp = Popen('aria2c -i {} -d / -x {} -j 100 -m 0 -V -U murse/0.0.2'.format(toasty,num_cpus), shell=True,stdin=PIPE, stdout=PIPE, universal_newlines=True)
+        fp = Popen('aria2c -i {} -d / -x {} -j 100 -m 0 -V -U {}/{}'.format(toasty,num_cpus,user_agent,version), shell=True,stdin=PIPE, stdout=PIPE, universal_newlines=True)
     done = False
+    errs = []
     while not done:
         for l in fp.stdout:
+            app.processEvents()
             if 'Verification finished successfully.' in l:
                 z = z + 1
                 self.progressBar.setValue(z)
@@ -432,6 +442,9 @@ def ariabar(arr, self, app, num_cpus=16):
                 app.processEvents()
             if "(OK):download completed" in l:
                 done = True
+            if "Exception" in  l:
+                  errs.append(l)
+    return errs
 
 def pbar_qt_verif(iter, self, app, num_cpus=16):
     length = len(iter)
