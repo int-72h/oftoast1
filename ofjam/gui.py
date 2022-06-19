@@ -8,7 +8,7 @@ import traceback
 import shutil
 import hashlib
 from subprocess import Popen, PIPE,call
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5 import QtCore, QtGui, QtWidgets, QtMultimedia
 from PyQt5.QtCore import QObject, pyqtSignal, QEvent
 from PyQt5.QtWidgets import QApplication, QMessageBox, QFileDialog
 from PyQt5.QtGui import QPalette, QColor, QFont
@@ -62,9 +62,12 @@ class Ui_MainWindow(object):
         if getattr(sys, "frozen", False):
             # PyInstaller executable
             toasty = str(Path(sys._MEIPASS).resolve().joinpath("toast.png"))
+            toasts = str(Path(sys._MEIPASS).resolve().joinpath("toast.wav"))
         else:
             # Raw .py file
             toasty = "toast.png"
+            toasts = "toast.wav"
+        QtMultimedia.QSound.play(toasts)
         self.label.setPixmap(QtGui.QPixmap(toasty))
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap(toasty), QtGui.QIcon.Normal, QtGui.QIcon.Off)
