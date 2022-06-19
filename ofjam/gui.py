@@ -33,7 +33,13 @@ def clickable(widget):  # make this function global
     filter = Filter(widget)
     widget.installEventFilter(filter)
     return filter.clicked
-
+def ResolvePath(obj):
+    if getattr(sys, "frozen", False):
+        # PyInstaller executable
+        return str(Path(sys._MEIPASS).resolve().joinpath(Path(obj)))
+    else:
+        # Raw .py file
+        return obj
 
 class Ui_MainWindow(object):
     wasWarned = False
@@ -59,18 +65,11 @@ class Ui_MainWindow(object):
         self.label = QtWidgets.QLabel(self.centralwidget)
         self.label.setGeometry(QtCore.QRect(295, 20, 131, 141))
         self.label.setText("")
-        if getattr(sys, "frozen", False):
-            # PyInstaller executable
-            toasty = str(Path(sys._MEIPASS).resolve().joinpath("toast.png"))
-            toasts = str(Path(sys._MEIPASS).resolve().joinpath("toast.wav"))
-        else:
-            # Raw .py file
-            toasty = "toast.png"
-            toasts = "toast.wav"
-        QtMultimedia.QSound.play(toasts)
-        self.label.setPixmap(QtGui.QPixmap(toasty))
+
+        QtMultimedia.QSound.play(ResolvePath("toast.wav"))
+        self.label.setPixmap(QtGui.QPixmap(ResolvePath("toast.png")))
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap(toasty), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon.addPixmap(QtGui.QPixmap(ResolvePath("toast.png")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         MainWindow.setWindowIcon(icon)
         self.label.setAlignment(QtCore.Qt.AlignCenter)
         self.label.setObjectName("label")
@@ -334,6 +333,7 @@ class Ui_MainWindow(object):
             exitMsg = QMessageBox()
             exitMsg.setWindowTitle("OFToast")
             exitMsg.setText("Done!")
+            QtMultimedia.QSound.play(ResolvePath("done.wav"))
             exitMsg.exec_()
             exit(1)
         except TimeoutError or httpx.RequestError or ConnectionResetError or httpx.ReadTimeout:
@@ -414,14 +414,8 @@ def work_verif(arr):
 
 
 def ariabar(arr, self, app, num_cpus=16):
-    if getattr(sys, "frozen", False):
-        # PyInstaller executable
-        toasty = str(Path(sys._MEIPASS).resolve().joinpath("todl.txt"))
-        ariapath = str(Path(sys._MEIPASS).resolve().joinpath("aria2c.exe"))
-    else:
-        # Raw .py file
-        toasty = "todl.txt"
-        ariapath = 'aria2c.exe'
+    toasty = ResolvePath("todl.txt")
+    ariapath = ResolvePath("aria2c.exe")
     x = open(toasty, 'w')
     length = len(arr)
     z = 0
