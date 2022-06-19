@@ -11,7 +11,7 @@ from subprocess import Popen, PIPE,call
 from PyQt5 import QtCore, QtGui, QtWidgets, QtMultimedia
 from PyQt5.QtCore import QObject, pyqtSignal, QEvent
 from PyQt5.QtWidgets import QApplication, QMessageBox, QFileDialog
-from PyQt5.QtGui import QPalette, QColor, QFont
+from PyQt5.QtGui import QPalette, QColor, QFont, QFontDatabase
 import sys
 
 global version
@@ -46,6 +46,11 @@ class Ui_MainWindow(object):
     verWarned = False
 
     def setupUi(self, app, MainWindow):
+        font_db = QFontDatabase()
+        font_db.addApplicationFont(ResolvePath("Staatliches-Regular.ttf"))
+        # families = font_db.applicationFontFamilies(font_id)
+        font = QFont("Staatliches")
+        QApplication.setFont(font)
         MainWindow.setObjectName("MainWindow")
         MainWindow.setEnabled(True)
         MainWindow.resize(720, 480)
@@ -65,8 +70,6 @@ class Ui_MainWindow(object):
         self.label = QtWidgets.QLabel(self.centralwidget)
         self.label.setGeometry(QtCore.QRect(295, 20, 131, 141))
         self.label.setText("")
-
-        QtMultimedia.QSound.play(ResolvePath("toast.wav"))
         self.label.setPixmap(QtGui.QPixmap(ResolvePath("toast.png")))
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap(ResolvePath("toast.png")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
@@ -92,7 +95,7 @@ class Ui_MainWindow(object):
         self.label_status = QtWidgets.QLabel(self.centralwidget)
         self.label_status.setGeometry(QtCore.QRect(100, 180, 521, 40))
         self.label_status.setObjectName("label_status")
-        self.label_status.setFont(QFont('Arial', 20))
+        self.label_status.setFont(QFont('Staatliches', 20))
         self.label_status.setAlignment(QtCore.Qt.AlignCenter)
         self.progressBar = QtWidgets.QProgressBar(self.centralwidget)
         self.progressBar.setGeometry(QtCore.QRect(100, 230, 521, 16))
@@ -151,6 +154,8 @@ class Ui_MainWindow(object):
             self.label_3.setText("Installed Revision: None")
 
     def clickUpdate(self):
+        QtMultimedia.QSound.play(ResolvePath("toast.wav"))
+        QtMultimedia.QSound.play(ResolvePath("start.wav"))
         global version
         try:
             # self.pushButton.setText('Updating...')
@@ -264,6 +269,8 @@ class Ui_MainWindow(object):
         exit(1)
 
     def clickVerify(self):
+        QtMultimedia.QSound.play(ResolvePath("toast.wav"))
+        QtMultimedia.QSound.play(ResolvePath("start.wav"))
         global version
         try:
             # self.pushButton_3.setText('Verifying...')
@@ -379,7 +386,13 @@ def get_latest_ver(url):
     return r.text.strip()
 
 def work(arr):
-    cmd = "aria2c {} -o \"{}\" -d / --checksum=md5={} -V -U murse/0.0.2".format(arr[0], arr[1], arr[2])
+    if sys.platform.startswith('win32'):
+        ariapath = ResolvePath("aria2c.exe")
+        cmd = '{} {} -o \"{}\" --checksum=md5={}  -d C: -j 100 -m 10 -V -U {}/{}'.format(ariapath,arr[0],arr[1],arr[2],user_agent,version)
+
+    else:
+        ariapath = ResolvePath("./aria2c")
+        cmd = '{} {} -o \"{}\" --checksum=md5={}  -d / -j 100 -m 10 -V -U {}/{}'.format(ariapath,arr[0],arr[1],arr[2],user_agent,version)
     done = False
     while not done:
         fp = Popen(cmd, shell=True, stdout=PIPE)
@@ -415,32 +428,37 @@ def work_verif(arr):
 
 def ariabar(arr, self, app, num_cpus=16):
     toasty = ResolvePath("todl.txt")
-    ariapath = ResolvePath("aria2c.exe")
+    certs = ResolvePath("ca-certificates.crt")
     x = open(toasty, 'w')
-    length = len(arr)
-    z = 0
     for a in arr:
         x.write('{}\n out={}\n checksum=md5={}\n'.format(a[0], a[1], a[2]))
     x.close()
+    length = len(arr)
+    z = 0
     if sys.platform.startswith('win32'):
-        fp = Popen('{} -i {} -d C: -x {} -j 100 -m 0 -V -U {}/{}'.format(ariapath,toasty, num_cpus,user_agent,version), shell=True,
+        ariapath = ResolvePath("aria2c.exe")
+        fp = Popen('{} --ca-certificate={} -i {} -d C: -x {} -j 100 -m 10 -V -U murse/0.0.2'.format(ariapath,certs,toasty, num_cpus), shell=True,
                    stdin=PIPE, stdout=PIPE, universal_newlines=True)
     else:
-        fp = Popen('aria2c -i {} -d / -x {} -j 100 -m 0 -V -U {}/{}'.format(toasty,num_cpus,user_agent,version), shell=True,stdin=PIPE, stdout=PIPE, universal_newlines=True)
+        ariapath = ResolvePath("./aria2c")
+        fp = Popen('{} --ca-certificate={} -i {} -d / -x {} -j 100 -m 10 -V -U murse/0.0.2'.format(ariapath,certs,toasty,num_cpus), shell=True,stdin=PIPE, stdout=PIPE, universal_newlines=True)
     done = False
     errs = []
     while not done:
         for l in fp.stdout:
+            print(l)
             app.processEvents()
             if 'Verification finished successfully.' in l:
                 z = z + 1
                 self.progressBar.setValue(z)
                 self.progressBar.setMaximum(length)
                 app.processEvents()
-            if "(OK):download completed" in l:
+            if "(OK):download completed" or '(ERR):error occurred' in l:
                 done = True
             if "Exception" in  l:
                   errs.append(l)
+            if "503" in l:
+                done = True
     return errs
 
 def pbar_qt_verif(iter, self, app, num_cpus=16):
