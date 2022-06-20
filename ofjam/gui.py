@@ -8,6 +8,7 @@ import traceback
 import shutil
 import hashlib
 import pygame
+from time import time
 from subprocess import Popen, PIPE,call
 from PyQt5 import QtCore, QtGui, QtWidgets, QtMultimedia
 from PyQt5.QtCore import QObject, pyqtSignal, QEvent
@@ -134,6 +135,7 @@ class Ui_MainWindow(object):
         self.pushButton_4.setGeometry(QtCore.QRect(300, 430, 90, 28))
         self.pushButton_4.setObjectName("pushButton_4")
         self.pushButton_4.clicked.connect(self.clickLaunch)
+        self.pushButton_5 = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton_5.setGeometry(QtCore.QRect(480, 430, 90, 28))
         self.pushButton_5.setObjectName("pushButton_5")
         self.pushButton_5.clicked.connect(self.clickMute)
@@ -153,7 +155,7 @@ class Ui_MainWindow(object):
         self.label_2.setText(_translate("MainWindow", "Download URL:"))
         self.label_4.setText(_translate("MainWindow", "Install Folder:"))
         self.label_status.setText(_translate("MainWindow", "Waiting to Download"))
-        self.lineEdit_2.setText(_translate("MainWindow", "https://toast.openfortress.fun/toast"))            
+        self.lineEdit_2.setText(_translate("MainWindow", "https://toast.openfortress.fun/toast"))
         self.pushButton.setText(_translate("MainWindow", "Install"))
         self.pushButton_2.setText(_translate("MainWindow", "Cancel"))
         self.pushButton_3.setText(_translate("MainWindow", "Verify"))
@@ -390,7 +392,7 @@ class Ui_MainWindow(object):
             pbar_qt_verif(todl, self, app, num_threads)
             (game_path / ".revision").touch(0o777)
             (game_path / ".revision").write_text(str(latest_revision))
-            pygame.mixer.Channel(1).stop()
+            pygame.mixer.Channel(0).stop()
             self.movie.stop()
             exitMsg = QMessageBox()
             exitMsg.setWindowTitle("OFToast")
@@ -431,7 +433,7 @@ class Ui_MainWindow(object):
             self.pushButton_2.setDisabled(False)
             self.pushButton_3.setDisabled(False)
             return
-            
+
     def clickLaunch(self):
         self.label_status.setText('Launching...')
         game_path = Path(self.lineEdit.text())
@@ -454,24 +456,24 @@ class Ui_MainWindow(object):
                     #print(library_folders[x]['path'])
                     sdkPath = (library_folders[x]['path'] / Path('steamapps') / Path('common') / Path('Source SDK Base 2013 Multiplayer'))
                     if os.path.isdir((sdkPath / Path('bin'))):
-                    	sdkExists = True
+                        sdkExists = True
             for x in library_folders:
                 if ('440' in library_folders[x]['apps'].keys()):
                     #print(library_folders[x]['path'])
                     tf2Path = (library_folders[x]['path'] / Path('steamapps') / Path('common') / Path('Team Fortress 2'))
                     if os.path.isdir((tf2Path / Path('bin'))):
-                    	tf2Exists = True                    	
+                        tf2Exists = True
 
-                    	
+
             if sdkExists == False and tf2Exists == False:
                 errorMsg = QMessageBox()
                 errorMsg.setWindowTitle("rei?")
-                errorMsg.setText("You dont seem to have the Source Sdk 2013 Base Multiplayer or Team Fortress 2 installed!" + 
+                errorMsg.setText("You dont seem to have the Source Sdk 2013 Base Multiplayer or Team Fortress 2 installed!" +
                 "They are a requirement to play Open Fortress.")
                 errorMsg.exec_()
                 self.label_status.setText('Waiting to Download')
                 return
-                
+
             if sdkExists == False:
                 errorMsg = QMessageBox()
                 errorMsg.setWindowTitle("rei?")
@@ -479,7 +481,7 @@ class Ui_MainWindow(object):
                 errorMsg.exec_()
                 self.label_status.setText('Waiting to Download')
                 return
-                
+
             if tf2Exists == False:
                 errorMsg = QMessageBox()
                 errorMsg.setWindowTitle("rei?")
@@ -487,7 +489,7 @@ class Ui_MainWindow(object):
                 errorMsg.exec_()
                 self.label_status.setText('Waiting to Download')
                 return
-                
+
 
         else:
             errorMsg = QMessageBox()
@@ -496,7 +498,7 @@ class Ui_MainWindow(object):
             errorMsg.exec_()
             self.label_status.setText('Waiting to Download')
             return
-        
+        app.processEvents()
         if platform.startswith('win32'):
             #hl2 = "{sdk}\hl2.exe".format(sdk = sdkPath)
             #run([hl2, "-game", ofpath], shell=True)
@@ -505,7 +507,11 @@ class Ui_MainWindow(object):
             #hl2 = "{sdk}\hl2_linux".format(sdk = sdkPath)
             #run([hl2, "-game", ofpath])
             run(["xdg-open","steam://rungameid/11677091221058336806"])
-        time.sleep(5)
+        ctime = time()
+        atime = time()
+        while ctime - atime < 5:
+            app.processEvents()
+            atime = time()
         self.label_status.setText('Waiting to Download')
 
     def downloadWarning(self):
@@ -645,7 +651,7 @@ def existing_game_check(ui, MainWindow):
             _translate = QtCore.QCoreApplication.translate
             ui.label_3.setText("Installed Revision: " + str(revision))
             ui.pushButton.setText(_translate("MainWindow", "Update"))
-            
+
         ui.lineEdit.setText(str(ofpath))
 
 
