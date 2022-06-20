@@ -7,6 +7,7 @@ import httpx
 import traceback
 import shutil
 import hashlib
+import pygame
 from subprocess import Popen, PIPE,call
 from PyQt5 import QtCore, QtGui, QtWidgets, QtMultimedia
 from PyQt5.QtCore import QObject, pyqtSignal, QEvent
@@ -17,6 +18,7 @@ import sys
 global version
 version = '0.2.4'
 user_agent = 'toast_ua'
+
 
 
 def clickable(widget):  # make this function global
@@ -44,8 +46,15 @@ def ResolvePath(obj):
 class Ui_MainWindow(object):
     wasWarned = False
     verWarned = False
-
+    chan = 0
+    def play(self,path):
+        pygame.mixer.Channel(self.chan).play(pygame.mixer.Sound(path))
+        self.chan+=1
+    def playing(self):
+        print(pygame.mixer.Channel(0).get_busy())
     def setupUi(self, app, MainWindow):
+        pygame.init()
+        pygame.mixer.set_num_channels(10)
         font_db = QFontDatabase()
         font_db.addApplicationFont(ResolvePath("Staatliches-Regular.ttf"))
         # families = font_db.applicationFontFamilies(font_id)
@@ -154,8 +163,8 @@ class Ui_MainWindow(object):
             self.label_3.setText("Installed Revision: None")
 
     def clickUpdate(self):
-        QtMultimedia.QSound.play(ResolvePath("toast.wav"))
-        QtMultimedia.QSound.play(ResolvePath("start.wav"))
+        self.play(ResolvePath("toast.wav"))
+        self.play(ResolvePath("start.wav"))
         global version
         try:
             # self.pushButton.setText('Updating...')
@@ -269,8 +278,7 @@ class Ui_MainWindow(object):
         exit(1)
 
     def clickVerify(self):
-        QtMultimedia.QSound.play(ResolvePath("toast.wav"))
-        QtMultimedia.QSound.play(ResolvePath("start.wav"))
+        self.play(ResolvePath("start.wav"))
         global version
         try:
             # self.pushButton_3.setText('Verifying...')
@@ -313,10 +321,7 @@ class Ui_MainWindow(object):
             revisions = fetch_revisions(url, installed_revision, latest_revision)
             changes = replay_changes(revisions)
             writes = list(filter(lambda x: x["type"] == TYPE_WRITE, changes))
-            client = httpx.Client(
-                headers={'user-agent': user_agent, 'Connection': 'keep-alive', 'Cache-Control': 'max-age=0'},
-                http2=True)
-            todl = [[url + "objects/" + x["object"], game_path / x["path"], x["hash"], client] for x in writes]
+            todl = [[url + "objects/" + x["object"], game_path / x["path"], x["hash"]] for x in writes]
             try:
                 os.remove(game_path / ".revision")
             except FileNotFoundError:
@@ -334,9 +339,11 @@ class Ui_MainWindow(object):
                 except FileExistsError:
                     pass
             # self.pushButton_3.setText('Verifying...')
+            self.play(ResolvePath("toast.wav"))
             pbar_qt_verif(todl, self, app, num_threads)
             (game_path / ".revision").touch(0o777)
             (game_path / ".revision").write_text(str(latest_revision))
+            pygame.mixer.Channel(1).stop()
             exitMsg = QMessageBox()
             exitMsg.setWindowTitle("OFToast")
             exitMsg.setText("Done!")
