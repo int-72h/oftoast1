@@ -5,12 +5,11 @@ from sys import exit
 from tvn import *
 import httpx
 import traceback
-import shutil
 import hashlib
 import pygame
-from time import time
+from time import time,sleep
 from subprocess import Popen, PIPE,call
-from PyQt5 import QtCore, QtGui, QtWidgets, QtMultimedia
+from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import QObject, pyqtSignal, QEvent
 from PyQt5.QtWidgets import QApplication, QMessageBox, QFileDialog
 from PyQt5.QtGui import QPalette, QColor, QFont, QFontDatabase, QMovie
@@ -43,6 +42,8 @@ def ResolvePath(obj):
     else:
         # Raw .py file
         return obj
+
+
 
 class Ui_MainWindow(object):
     wasWarned = False
@@ -366,6 +367,7 @@ class Ui_MainWindow(object):
                     "This isn't the latest version! you need to download the latest version from the website.\nlatest "
                     "version: " + latest_ver)
                 errorMsg.exec_()
+            app.processEvents()
             revisions = fetch_revisions(url, installed_revision, latest_revision)
             changes = replay_changes(revisions)
             writes = list(filter(lambda x: x["type"] == TYPE_WRITE, changes))
@@ -392,12 +394,13 @@ class Ui_MainWindow(object):
             pbar_qt_verif(todl, self, app, num_threads)
             (game_path / ".revision").touch(0o777)
             (game_path / ".revision").write_text(str(latest_revision))
-            pygame.mixer.Channel(0).stop()
+            self.stop(0)
             self.movie.stop()
             exitMsg = QMessageBox()
             exitMsg.setWindowTitle("OFToast")
             exitMsg.setText("Done!")
-            QtMultimedia.QSound.play(ResolvePath("done.wav"))
+            self.play(ResolvePath("done.wav"),1)
+            self.downloading = False
             exitMsg.exec_()
             #exit(1)
             self.label_status.setText('Waiting to Download')
@@ -600,6 +603,9 @@ def ariabar(arr, self, app, num_cpus=16):
                 z = z + 1
                 self.progressBar.setValue(z)
                 self.progressBar.setMaximum(length)
+                if not self.muted:
+                    if not pygame.mixer.Channel(0).get_busy():
+                        self.play(ResolvePath("toast.wav"), 0)
                 app.processEvents()
             if "(OK):download completed" or '(ERR):error occurred' in l:
                 done = True
