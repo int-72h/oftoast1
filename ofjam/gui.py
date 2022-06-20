@@ -12,7 +12,7 @@ from subprocess import Popen, PIPE,call
 from PyQt5 import QtCore, QtGui, QtWidgets, QtMultimedia
 from PyQt5.QtCore import QObject, pyqtSignal, QEvent
 from PyQt5.QtWidgets import QApplication, QMessageBox, QFileDialog
-from PyQt5.QtGui import QPalette, QColor, QFont, QFontDatabase
+from PyQt5.QtGui import QPalette, QColor, QFont, QFontDatabase, QMovie
 import sys
 
 global version
@@ -46,12 +46,13 @@ def ResolvePath(obj):
 class Ui_MainWindow(object):
     wasWarned = False
     verWarned = False
-    chan = 0
-    def play(self,path):
-        pygame.mixer.Channel(self.chan).play(pygame.mixer.Sound(path))
-        self.chan+=1
-    def playing(self):
-        print(pygame.mixer.Channel(0).get_busy())
+    muted = False
+    downloading = False
+    def play(self,path,chan):
+        if not self.muted:
+            pygame.mixer.Channel(chan).play(pygame.mixer.Sound(path))
+    def stop(self,chan):
+        pygame.mixer.Channel(chan).stop()
     def setupUi(self, app, MainWindow):
         pygame.init()
         pygame.mixer.set_num_channels(10)
@@ -80,6 +81,7 @@ class Ui_MainWindow(object):
         self.label.setGeometry(QtCore.QRect(295, 20, 131, 141))
         self.label.setText("")
         self.label.setPixmap(QtGui.QPixmap(ResolvePath("toast.png")))
+        self.movie = QMovie(ResolvePath("toast.gif"))
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap(ResolvePath("toast.png")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         MainWindow.setWindowIcon(icon)
@@ -125,6 +127,10 @@ class Ui_MainWindow(object):
         self.pushButton_3.setGeometry(QtCore.QRect(200, 430, 90, 28))
         self.pushButton_3.setObjectName("pushButton_3")
         self.pushButton_3.clicked.connect(self.clickVerify)
+        self.pushButton_4 = QtWidgets.QPushButton(self.centralwidget)
+        self.pushButton_4.setGeometry(QtCore.QRect(480, 430, 90, 28))
+        self.pushButton_4.setObjectName("pushButton_4")
+        self.pushButton_4.clicked.connect(self.clickMute)
         self.label_3 = QtWidgets.QLabel(self.centralwidget)
         self.label_3.setGeometry(QtCore.QRect(100, 250, 211, 20))
         # self.label_3.setAlignment(QtCore.Qt.AlignCenter)
@@ -145,6 +151,7 @@ class Ui_MainWindow(object):
         self.pushButton.setText(_translate("MainWindow", "Install"))
         self.pushButton_2.setText(_translate("MainWindow", "Cancel"))
         self.pushButton_3.setText(_translate("MainWindow", "Verify"))
+        self.pushButton_4.setText(_translate("MainWindow", "Mute"))
         self.label_3.setText(_translate("MainWindow", "Installed Revision: None"))
 
     def clickBrowse(self):
@@ -163,8 +170,8 @@ class Ui_MainWindow(object):
             self.label_3.setText("Installed Revision: None")
 
     def clickUpdate(self):
-        self.play(ResolvePath("toast.wav"))
-        self.play(ResolvePath("start.wav"))
+        self.play(ResolvePath("toast.wav"),0)
+        self.play(ResolvePath("start.wav"),1)
         global version
         try:
             # self.pushButton.setText('Updating...')
@@ -235,6 +242,7 @@ class Ui_MainWindow(object):
             (game_path / ".revision").touch(0o777)
             (game_path / ".revision").write_text(str(latest_revision))
             if errs != []:
+
                 error_message = '\n'.join(errs)
                 errorMsg = QMessageBox()
                 errorMsg.setWindowTitle("Toast Meditation")
@@ -245,6 +253,7 @@ class Ui_MainWindow(object):
                 exit(1)
             # now verify just in case
             self.clickVerify()
+            self.label.setPixmap(QtGui.QPixmap(ResolvePath("toast.png")))
             exitMsg = QMessageBox()
             exitMsg.setWindowTitle("OFToast")
             exitMsg.setText("Done!")
@@ -277,8 +286,21 @@ class Ui_MainWindow(object):
     def clickCancel(self):
         exit(1)
 
+    def clickMute(self):
+        if not self.muted:
+            self.muted = True
+            if pygame.mixer.Channel(0).get_busy():
+                self.stop(0)
+        else:
+            self.muted = False
+            if not pygame.mixer.Channel(0).get_busy() and (self.downloading == True):
+                self.play(ResolvePath("toast.wav"), 0)
+
+
     def clickVerify(self):
-        self.play(ResolvePath("start.wav"))
+        self.label.setMovie(self.movie)
+        self.movie.start()
+        self.play(ResolvePath("start.wav"),1)
         global version
         try:
             # self.pushButton_3.setText('Verifying...')
@@ -339,11 +361,13 @@ class Ui_MainWindow(object):
                 except FileExistsError:
                     pass
             # self.pushButton_3.setText('Verifying...')
-            self.play(ResolvePath("toast.wav"))
+            self.play(ResolvePath("toast.wav"),0)
+            self.downloading = True
             pbar_qt_verif(todl, self, app, num_threads)
             (game_path / ".revision").touch(0o777)
             (game_path / ".revision").write_text(str(latest_revision))
             pygame.mixer.Channel(1).stop()
+            self.movie.stop()
             exitMsg = QMessageBox()
             exitMsg.setWindowTitle("OFToast")
             exitMsg.setText("Done!")
