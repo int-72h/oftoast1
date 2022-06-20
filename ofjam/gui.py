@@ -157,7 +157,7 @@ class Ui_MainWindow(object):
         self.label_status.setText(_translate("MainWindow", "Waiting to Download"))
         self.lineEdit_2.setText(_translate("MainWindow", "https://toast.openfortress.fun/toast"))
         self.pushButton.setText(_translate("MainWindow", "Install"))
-        self.pushButton_2.setText(_translate("MainWindow", "Cancel"))
+        self.pushButton_2.setText(_translate("MainWindow", "Exit"))
         self.pushButton_3.setText(_translate("MainWindow", "Verify"))
         self.pushButton_5.setText(_translate("MainWindow", "Mute"))
         self.label_3.setText(_translate("MainWindow", "Installed Revision: None"))
@@ -264,15 +264,6 @@ class Ui_MainWindow(object):
                 exit(1)
             # now verify just in case
             self.clickVerify()
-            self.label.setPixmap(QtGui.QPixmap(ResolvePath("toast.png")))
-            #exitMsg = QMessageBox()
-            #exitMsg.setWindowTitle("OFToast")
-            # exitMsg.setText("Done!") // We already have a done message in clickVerify()
-            #exitMsg.exec_()
-            self.label_status.setText('Waiting to Download')
-            self.pushButton.setDisabled(False)
-            self.pushButton_2.setDisabled(False)
-            self.pushButton_3.setDisabled(False)
             return
         except TimeoutError or httpx.RequestError or ConnectionResetError or httpx.ReadTimeout:
             errorMsg = QMessageBox()
@@ -400,7 +391,9 @@ class Ui_MainWindow(object):
             QtMultimedia.QSound.play(ResolvePath("done.wav"))
             exitMsg.exec_()
             #exit(1)
+            self.label.setPixmap(QtGui.QPixmap(ResolvePath("toast.png")))
             self.label_status.setText('Waiting to Download')
+            self.progressBar.setValue(0)
             self.pushButton.setDisabled(False)
             self.pushButton_2.setDisabled(False)
             self.pushButton_3.setDisabled(False)
@@ -507,11 +500,6 @@ class Ui_MainWindow(object):
             #hl2 = "{sdk}\hl2_linux".format(sdk = sdkPath)
             #run([hl2, "-game", ofpath])
             run(["xdg-open","steam://rungameid/11677091221058336806"])
-        ctime = time()
-        atime = time()
-        while ctime - atime < 5:
-            app.processEvents()
-            atime = time()
         self.label_status.setText('Waiting to Download')
 
     def downloadWarning(self):
