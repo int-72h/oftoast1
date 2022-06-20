@@ -265,10 +265,10 @@ class Ui_MainWindow(object):
             # now verify just in case
             self.clickVerify()
             self.label.setPixmap(QtGui.QPixmap(ResolvePath("toast.png")))
-            exitMsg = QMessageBox()
-            exitMsg.setWindowTitle("OFToast")
-            exitMsg.setText("Done!")
-            exitMsg.exec_()
+            #exitMsg = QMessageBox()
+            #exitMsg.setWindowTitle("OFToast")
+            # exitMsg.setText("Done!") // We already have a done message in clickVerify()
+            #exitMsg.exec_()
             self.label_status.setText('Waiting to Download')
             self.pushButton.setDisabled(False)
             self.pushButton_2.setDisabled(False)
@@ -534,13 +534,14 @@ def get_latest_ver(url):
     return r.text.strip()
 
 def work(arr):
+    certs = ResolvePath("ca-certificates.crt")
     if sys.platform.startswith('win32'):
         ariapath = ResolvePath("aria2c.exe")
-        cmd = '{} {} -o \"{}\" --checksum=md5={}  -d C: -j 100 -m 10 -V -U {}/{}'.format(ariapath,arr[0],arr[1],arr[2],user_agent,version)
+        cmd = '{} {} -o \"{}\" --checksum=md5={} --ca-certificate={} -d C: -j 100 -m 10 -V -U {}/{}'.format(ariapath,arr[0],str(arr[1])[3:],arr[2],certs,user_agent,version)
 
     else:
         ariapath = ResolvePath("./aria2c")
-        cmd = '{} {} -o \"{}\" --checksum=md5={}  -d / -j 100 -m 10 -V -U {}/{}'.format(ariapath,arr[0],arr[1],arr[2],user_agent,version)
+        cmd = '{} {} -o \"{}\" --checksum=md5={} --ca-certificate={} -d / -j 100 -m 10 -V -U {}/{}'.format(ariapath,arr[0],str(arr[1])[3:],arr[2],certs,user_agent,version)
     done = False
     while not done:
         fp = Popen(cmd, shell=True, stdout=PIPE)
@@ -579,17 +580,17 @@ def ariabar(arr, self, app, num_cpus=16):
     certs = ResolvePath("ca-certificates.crt")
     x = open(toasty, 'w')
     for a in arr:
-        x.write('{}\n out={}\n checksum=md5={}\n'.format(a[0], a[1], a[2]))
+        x.write('{}\n out={}\n checksum=md5={}\n'.format(a[0], str(a[1])[3:], a[2]))
     x.close()
     length = len(arr)
     z = 0
     if sys.platform.startswith('win32'):
         ariapath = ResolvePath("aria2c.exe")
-        fp = Popen('{} --ca-certificate={} -i {} -d C: -x {} -j 100 -m 10 -V -U murse/0.0.2'.format(ariapath,certs,toasty, num_cpus), shell=True,
+        fp = Popen('{} --ca-certificate={} -i {} -d C: -x {} -j 100 -m 10 -V -U {}/{}'.format(ariapath,certs,toasty, num_cpus,user_agent,version), shell=True,
                    stdin=PIPE, stdout=PIPE, universal_newlines=True)
     else:
         ariapath = ResolvePath("./aria2c")
-        fp = Popen('{} --ca-certificate={} -i {} -d / -x {} -j 100 -m 10 -V -U murse/0.0.2'.format(ariapath,certs,toasty,num_cpus), shell=True,stdin=PIPE, stdout=PIPE, universal_newlines=True)
+        fp = Popen('{} --ca-certificate={} -i {} -d / -x {} -j 100 -m 10 -V -U {}/{}'.format(ariapath,certs,toasty,num_cpus,user_agent,version), shell=True,stdin=PIPE, stdout=PIPE, universal_newlines=True)
     done = False
     errs = []
     while not done:
