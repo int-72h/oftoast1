@@ -7,11 +7,12 @@ import httpx
 import traceback
 import shutil
 import hashlib
-
-from PyQt5 import QtCore, QtGui, QtWidgets
+import pygame
+from subprocess import Popen, PIPE,call
+from PyQt5 import QtCore, QtGui, QtWidgets, QtMultimedia
 from PyQt5.QtCore import QObject, pyqtSignal, QEvent
 from PyQt5.QtWidgets import QApplication, QMessageBox, QFileDialog
-from PyQt5.QtGui import QPalette, QColor, QFont
+from PyQt5.QtGui import QPalette, QColor, QFont, QFontDatabase, QMovie
 import sys
 
 global version
@@ -19,7 +20,8 @@ version = '0.2.5'
 user_agent = 'toast_ua'
 
 
-def clickable(widget): # make this function global
+
+def clickable(widget):  # make this function global
     class Filter(QObject):
         clicked = pyqtSignal()
 
@@ -29,14 +31,36 @@ def clickable(widget): # make this function global
                 return True
             else:
                 return False
+
     filter = Filter(widget)
     widget.installEventFilter(filter)
     return filter.clicked
+def ResolvePath(obj):
+    if getattr(sys, "frozen", False):
+        # PyInstaller executable
+        return str(Path(sys._MEIPASS).resolve().joinpath(Path(obj)))
+    else:
+        # Raw .py file
+        return obj
 
 class Ui_MainWindow(object):
     wasWarned = False
     verWarned = False
+    muted = False
+    downloading = False
+    def play(self,path,chan):
+        if not self.muted:
+            pygame.mixer.Channel(chan).play(pygame.mixer.Sound(path))
+    def stop(self,chan):
+        pygame.mixer.Channel(chan).stop()
     def setupUi(self, app, MainWindow):
+        pygame.init()
+        pygame.mixer.set_num_channels(10)
+        font_db = QFontDatabase()
+        font_db.addApplicationFont(ResolvePath("Staatliches-Regular.ttf"))
+        # families = font_db.applicationFontFamilies(font_id)
+        font = QFont("Staatliches")
+        QApplication.setFont(font)
         MainWindow.setObjectName("MainWindow")
         MainWindow.setEnabled(True)
         MainWindow.resize(720, 480)
@@ -56,15 +80,10 @@ class Ui_MainWindow(object):
         self.label = QtWidgets.QLabel(self.centralwidget)
         self.label.setGeometry(QtCore.QRect(295, 20, 131, 141))
         self.label.setText("")
-        if getattr(sys, "frozen", False):
-            # PyInstaller executable
-            toasty = str(Path(sys._MEIPASS).resolve().joinpath("toast.png"))
-        else:
-            # Raw .py file
-            toasty = "toast.png"
-        self.label.setPixmap(QtGui.QPixmap(toasty))
+        self.label.setPixmap(QtGui.QPixmap(ResolvePath("toast.png")))
+        self.movie = QMovie(ResolvePath("toast.gif"))
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap(toasty), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon.addPixmap(QtGui.QPixmap(ResolvePath("toast.png")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         MainWindow.setWindowIcon(icon)
         self.label.setAlignment(QtCore.Qt.AlignCenter)
         self.label.setObjectName("label")
@@ -72,10 +91,10 @@ class Ui_MainWindow(object):
         self.lineEdit.setGeometry(QtCore.QRect(100, 330, 421, 28))
         self.lineEdit.setObjectName("lineEdit")
         self.lineEdit.setReadOnly(True)
-        #self.lineEdit.setDisabled(True)
+        # self.lineEdit.setDisabled(True)
         self.label_2 = QtWidgets.QLabel(self.centralwidget)
         self.label_2.setGeometry(QtCore.QRect(100, 360, 121, 31))
-        #self.label_2.setAlignment(QtCore.Qt.AlignCenter)
+        # self.label_2.setAlignment(QtCore.Qt.AlignCenter)
         self.label_2.setObjectName("label_2")
         self.lineEdit_2 = QtWidgets.QLineEdit(self.centralwidget)
         self.lineEdit_2.setGeometry(QtCore.QRect(100, 390, 291, 28))
@@ -87,7 +106,7 @@ class Ui_MainWindow(object):
         self.label_status = QtWidgets.QLabel(self.centralwidget)
         self.label_status.setGeometry(QtCore.QRect(100, 180, 521, 40))
         self.label_status.setObjectName("label_status")
-        self.label_status.setFont(QFont('Arial', 20))
+        self.label_status.setFont(QFont('Staatliches', 20))
         self.label_status.setAlignment(QtCore.Qt.AlignCenter)
         self.progressBar = QtWidgets.QProgressBar(self.centralwidget)
         self.progressBar.setGeometry(QtCore.QRect(100, 230, 521, 16))
@@ -115,9 +134,12 @@ class Ui_MainWindow(object):
         self.pushButton_4.setGeometry(QtCore.QRect(300, 430, 90, 28))
         self.pushButton_4.setObjectName("pushButton_4")
         self.pushButton_4.clicked.connect(self.clickLaunch)
+        self.pushButton_5.setGeometry(QtCore.QRect(480, 430, 90, 28))
+        self.pushButton_5.setObjectName("pushButton_5")
+        self.pushButton_5.clicked.connect(self.clickMute)
         self.label_3 = QtWidgets.QLabel(self.centralwidget)
         self.label_3.setGeometry(QtCore.QRect(100, 250, 211, 20))
-        #self.label_3.setAlignment(QtCore.Qt.AlignCenter)
+        # self.label_3.setAlignment(QtCore.Qt.AlignCenter)
         self.label_3.setObjectName("label_3")
         MainWindow.setCentralWidget(self.centralwidget)
 
@@ -135,6 +157,7 @@ class Ui_MainWindow(object):
         self.pushButton.setText(_translate("MainWindow", "Install"))
         self.pushButton_2.setText(_translate("MainWindow", "Cancel"))
         self.pushButton_3.setText(_translate("MainWindow", "Verify"))
+        self.pushButton_5.setText(_translate("MainWindow", "Mute"))
         self.label_3.setText(_translate("MainWindow", "Installed Revision: None"))
         self.pushButton_4.setText(_translate("MainWindow", "Launch"))
 
@@ -152,9 +175,11 @@ class Ui_MainWindow(object):
             self.label_3.setText("Installed Revision: None")
 
     def clickUpdate(self):
+        self.play(ResolvePath("toast.wav"),0)
+        self.play(ResolvePath("start.wav"),1)
         global version
         try:
-            #self.pushButton.setText('Updating...')
+            # self.pushButton.setText('Updating...')
             self.label_status.setText('Updating...')
             self.pushButton.setDisabled(True)
             self.pushButton_2.setDisabled(True)
@@ -204,8 +229,7 @@ class Ui_MainWindow(object):
             revisions = fetch_revisions(url, installed_revision, latest_revision)
             changes = replay_changes(revisions)
             writes = list(filter(lambda x: x["type"] == TYPE_WRITE, changes))
-            client = httpx.Client(headers={'user-agent': user_agent, 'Connection': 'keep-alive', 'Cache-Control': 'max-age=0'}, http2=True)
-            todl = [[url + "objects/" + x["object"], game_path / x["path"], x["hash"], client] for x in writes]
+            todl = [[url + "objects/" + x["object"], game_path / x["path"], x["hash"]] for x in writes]
             try:
                 os.remove(game_path / ".revision")
             except FileNotFoundError:
@@ -222,12 +246,23 @@ class Ui_MainWindow(object):
                     os.mkdir(game_path / x["path"], 0o777)
                 except FileExistsError:
                     pass
-            #self.pushButton.setText('Downloading...')
-            pbar_sg(todl, self, app, num_threads)
+            # self.pushButton.setText('Downloading...')
+            errs = ariabar(todl, self, app, num_threads)
             (game_path / ".revision").touch(0o777)
             (game_path / ".revision").write_text(str(latest_revision))
-            #now verify just in case
+            if errs != []:
+
+                error_message = '\n'.join(errs)
+                errorMsg = QMessageBox()
+                errorMsg.setWindowTitle("Toast Meditation")
+                errorMsg.setText(
+                    "Something's gone wrong with the downloading! Post the following error(s) in the troubleshooting "
+                    "channel: " + error_message)
+                errorMsg.exec_()
+                exit(1)
+            # now verify just in case
             self.clickVerify()
+            self.label.setPixmap(QtGui.QPixmap(ResolvePath("toast.png")))
             exitMsg = QMessageBox()
             exitMsg.setWindowTitle("OFToast")
             exitMsg.setText("Done!")
@@ -239,25 +274,27 @@ class Ui_MainWindow(object):
             return
         except TimeoutError or httpx.RequestError or ConnectionResetError or httpx.ReadTimeout:
             errorMsg = QMessageBox()
-            errorMsg.setWindowTitle("rei?")
+
+            errorMsg.setWindowTitle("hmm... raspberry.")
             errorMsg.setText("The server you've connected to is down! Try again later.")
             errorMsg.exec_()
         except TimeoutError or httpx.RequestError or ConnectionResetError:
             errorMsg = QMessageBox()
-            errorMsg.setWindowTitle("rei?")
+            errorMsg.setWindowTitle("hmm... raspberry.")
+
             errorMsg.setText("The server you've connected to is down! Try again later.")
             errorMsg.exec_()
         except Exception as e:
             error_message = traceback.format_exc()
             if 'timeout' or 'reset' in error_message:
                 errorMsg = QMessageBox()
-                errorMsg.setWindowTitle("rei?")
+                errorMsg.setWindowTitle("I actually prefer marmalade.")
                 errorMsg.setText("The server you've connected to is down! Try again later.")
                 errorMsg.exec_()
             errorMsg = QMessageBox()
-            errorMsg.setWindowTitle("rei?")
+            errorMsg.setWindowTitle("Uh oh.")
             errorMsg.setText(
-                "Something's gone wrong! Post the following error in the troubleshooting channel: " + error_message)
+                "Something's gone catastrophically wrong! Post the following error in the troubleshooting channel: " + error_message)
             errorMsg.exec_()
             self.label_status.setText('Waiting to Download')
             self.pushButton.setDisabled(False)
@@ -267,11 +304,25 @@ class Ui_MainWindow(object):
     def clickCancel(self):
         exit(1)
 
-    
+
+    def clickMute(self):
+        if not self.muted:
+            self.muted = True
+            if pygame.mixer.Channel(0).get_busy():
+                self.stop(0)
+        else:
+            self.muted = False
+            if not pygame.mixer.Channel(0).get_busy() and (self.downloading == True):
+                self.play(ResolvePath("toast.wav"), 0)
+
+
     def clickVerify(self):
+        self.label.setMovie(self.movie)
+        self.movie.start()
+        self.play(ResolvePath("start.wav"),1)
         global version
         try:
-            #self.pushButton_3.setText('Verifying...')
+            # self.pushButton_3.setText('Verifying...')
             self.label_status.setText('Verifying...')
             self.pushButton.setDisabled(True)
             self.pushButton_2.setDisabled(True)
@@ -279,7 +330,7 @@ class Ui_MainWindow(object):
             app.processEvents()
             game_path = Path(self.lineEdit.text())
             url = self.lineEdit_2.text()
-            response = httpx.get(url, headers={'user-agent': user_agent},follow_redirects=True)
+            response = httpx.get(url, headers={'user-agent': user_agent}, follow_redirects=True)
             resUrl = response.url
             url = "https://" + resUrl.host + "/toast/"
             print("Server Selected: " + url)
@@ -288,7 +339,7 @@ class Ui_MainWindow(object):
                     Path.mkdir(game_path / Path('open_fortress'))
                 except FileExistsError:
                     pass
-            installed_revision = -1 # = get_installed_revision(game_path)
+            installed_revision = -1  # = get_installed_revision(game_path)
             try:
                 num_threads = get_threads(url)
                 latest_ver = get_latest_ver(url)
@@ -316,8 +367,7 @@ class Ui_MainWindow(object):
             revisions = fetch_revisions(url, installed_revision, latest_revision)
             changes = replay_changes(revisions)
             writes = list(filter(lambda x: x["type"] == TYPE_WRITE, changes))
-            client = httpx.Client(headers={'user-agent': user_agent, 'Connection': 'keep-alive', 'Cache-Control': 'max-age=0'}, http2=True)
-            todl = [[url + "objects/" + x["object"], game_path / x["path"], x["hash"], client] for x in writes]
+            todl = [[url + "objects/" + x["object"], game_path / x["path"], x["hash"]] for x in writes]
             try:
                 os.remove(game_path / ".revision")
             except FileNotFoundError:
@@ -334,13 +384,18 @@ class Ui_MainWindow(object):
                     os.mkdir(game_path / x["path"], 0o777)
                 except FileExistsError:
                     pass
-            #self.pushButton_3.setText('Verifying...')
-            pbar_sg_verif(todl, self, app, num_threads)
+            # self.pushButton_3.setText('Verifying...')
+            self.play(ResolvePath("toast.wav"),0)
+            self.downloading = True
+            pbar_qt_verif(todl, self, app, num_threads)
             (game_path / ".revision").touch(0o777)
             (game_path / ".revision").write_text(str(latest_revision))
+            pygame.mixer.Channel(1).stop()
+            self.movie.stop()
             exitMsg = QMessageBox()
             exitMsg.setWindowTitle("OFToast")
             exitMsg.setText("Done!")
+            QtMultimedia.QSound.play(ResolvePath("done.wav"))
             exitMsg.exec_()
             #exit(1)
             self.label_status.setText('Waiting to Download')
@@ -453,10 +508,9 @@ class Ui_MainWindow(object):
         time.sleep(5)
         self.label_status.setText('Waiting to Download')
 
-
     def downloadWarning(self):
-        if self.wasWarned==False:
-            self.wasWarned=True
+        if self.wasWarned == False:
+            self.wasWarned = True
             warnMsg = QMessageBox()
             warnMsg.setWindowTitle("Warning")
             warnMsg.setText("Changing the Download URL is not advised. Only change it if you know what you're doing.")
@@ -473,39 +527,24 @@ def get_latest_ver(url):
     r = httpx.get(url + "/reiversion", headers={'user-agent': user_agent}, follow_redirects=True)
     return r.text.strip()
 
-
 def work(arr):
-    try:
-        exists = False
-        while exists == False:
-            wasProblematic = False
-            goodDownload = False
-            hasher = hashlib.md5()
-            while goodDownload == False:
-                resp = arr[3].get(arr[0])
-                hasher.update(resp.content)
-                hodl = hasher.hexdigest()
-                #print("Hash of file:", hodl)
-                #print("Compared to stored hash of:", arr[2])
-                if hodl == arr[2]:
-                    goodDownload = True
-                else:
-                    if wasProblematic == False:
-                        print("Hash failed for file", arr[1], "Retrying...")
-                    wasProblematic = True
-                    hasher = hashlib.md5() #reset hasher
-                    goodDownload = False
-            if wasProblematic:
-                print(arr[1], "was able to finish downloading!")
-            file = open(arr[1], "wb+")
-            file.write(resp.content)
-            file.close()
-            if arr[1].exists():
-                exists = True
-            else:
-                print("file hasn't downloaded...")
-    except:
-        work(arr) #hate this workaround
+    if sys.platform.startswith('win32'):
+        ariapath = ResolvePath("aria2c.exe")
+        cmd = '{} {} -o \"{}\" --checksum=md5={}  -d C: -j 100 -m 10 -V -U {}/{}'.format(ariapath,arr[0],arr[1],arr[2],user_agent,version)
+
+    else:
+        ariapath = ResolvePath("./aria2c")
+        cmd = '{} {} -o \"{}\" --checksum=md5={}  -d / -j 100 -m 10 -V -U {}/{}'.format(ariapath,arr[0],arr[1],arr[2],user_agent,version)
+    done = False
+    while not done:
+        fp = Popen(cmd, shell=True, stdout=PIPE)
+        fp.wait()
+        content = [x.decode(encoding="utf-8", errors="ignore") for x in fp.stdout]
+        if 'OK' in content[-1]:
+            done = True
+        else:
+            print(content[-1])
+
 
 def work_verif(arr):
     try:
@@ -517,7 +556,7 @@ def work_verif(arr):
             hasher.update(fcontents)
             hodl = hasher.hexdigest()
             if hodl == arr[2]:
-                #good :)
+                # good :)
                 pass
             else:
                 print(arr[1], "failed verification, redownloading...")
@@ -529,18 +568,42 @@ def work_verif(arr):
         work_verif(arr)
 
 
-def pbar_sg(iter, self, app, num_cpus=16):
-    length = len(iter)
+def ariabar(arr, self, app, num_cpus=16):
+    toasty = ResolvePath("todl.txt")
+    certs = ResolvePath("ca-certificates.crt")
+    x = open(toasty, 'w')
+    for a in arr:
+        x.write('{}\n out={}\n checksum=md5={}\n'.format(a[0], a[1], a[2]))
+    x.close()
+    length = len(arr)
     z = 0
-    executor = ThreadPoolExecutor(num_cpus)
-    futures = {executor.submit(work, x): x for x in iter}
-    for _ in as_completed(futures):
-        z = z + 1
-        self.progressBar.setValue(z)
-        self.progressBar.setMaximum(length)
-        app.processEvents()
+    if sys.platform.startswith('win32'):
+        ariapath = ResolvePath("aria2c.exe")
+        fp = Popen('{} --ca-certificate={} -i {} -d C: -x {} -j 100 -m 10 -V -U murse/0.0.2'.format(ariapath,certs,toasty, num_cpus), shell=True,
+                   stdin=PIPE, stdout=PIPE, universal_newlines=True)
+    else:
+        ariapath = ResolvePath("./aria2c")
+        fp = Popen('{} --ca-certificate={} -i {} -d / -x {} -j 100 -m 10 -V -U murse/0.0.2'.format(ariapath,certs,toasty,num_cpus), shell=True,stdin=PIPE, stdout=PIPE, universal_newlines=True)
+    done = False
+    errs = []
+    while not done:
+        for l in fp.stdout:
+            print(l)
+            app.processEvents()
+            if 'Verification finished successfully.' in l:
+                z = z + 1
+                self.progressBar.setValue(z)
+                self.progressBar.setMaximum(length)
+                app.processEvents()
+            if "(OK):download completed" or '(ERR):error occurred' in l:
+                done = True
+            if "Exception" in  l:
+                  errs.append(l)
+            if "503" in l:
+                done = True
+    return errs
 
-def pbar_sg_verif(iter, self, app, num_cpus=16):
+def pbar_qt_verif(iter, self, app, num_cpus=16):
     length = len(iter)
     z = 0
     executor = ThreadPoolExecutor(num_cpus)
@@ -556,19 +619,22 @@ def get_revision(url: str, revision: int):
     r = httpx.get(url + "/" + str(revision), headers={'user-agent': user_agent}, follow_redirects=True)
     return json.loads(r.text)
 
-def fetch_latest_revision(url):
-	#r = urllib.request.urlopen()
-	r = httpx.get(url + "revisions/latest", headers={'user-agent': user_agent}, follow_redirects=True)
-	return int(r.text)
 
-def fetch_revisions(url,first,last):
-	revisions = []
-	for x in range(first+1, last+1):
-		if not (x < 0):
-			#r = urllib.request.urlopen(url + "revisions/" + str(x))
-			r = httpx.get(url + "revisions/" + str(x), headers={'user-agent': user_agent}, follow_redirects=True)
-			revisions.append(json.loads(r.text))
-	return revisions
+def fetch_latest_revision(url):
+    # r = urllib.request.urlopen()
+    r = httpx.get(url + "revisions/latest", headers={'user-agent': user_agent}, follow_redirects=True)
+    return int(r.text)
+
+
+def fetch_revisions(url, first, last):
+    revisions = []
+    for x in range(first + 1, last + 1):
+        if not (x < 0):
+            # r = urllib.request.urlopen(url + "revisions/" + str(x))
+            r = httpx.get(url + "revisions/" + str(x), headers={'user-agent': user_agent}, follow_redirects=True)
+            revisions.append(json.loads(r.text))
+    return revisions
+
 
 def existing_game_check(ui, MainWindow):
     ofpath = getpath()
@@ -601,6 +667,26 @@ def set_theme(app, MainWindow):
     palette.setColor(QPalette.HighlightedText, QColor(0, 0, 0))
     app.setPalette(palette)
 
+def ariacheck():
+    if sys.platform.startswith('win32'):
+        if getattr(sys, "frozen", False):
+            # PyInstaller executable
+            toasty = str(Path(sys._MEIPASS).resolve().joinpath("aria2c.exe"))
+        else:
+            # Raw .py file
+            toasty = "aria2c.exe"
+        rc = call([toasty,'-v'])
+        if rc != 0:
+            print('ok somethings gone wrong')
+    else:
+        rc = call(['which','aria2c'])
+        if rc != 0:
+            warnMsg = QMessageBox()
+            warnMsg.setWindowTitle("OFToast")
+            warnMsg.setText(
+                "You need to install aria2 from your package manager. OFToast won't function without it.")
+            warnMsg.setStandardButtons(QMessageBox.Ok)
+            sys.exit()
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
@@ -608,6 +694,7 @@ if __name__ == "__main__":
     ui = Ui_MainWindow()
     set_theme(app, MainWindow)
     ui.setupUi(app, MainWindow)
+    ariacheck()
     existing_game_check(ui, MainWindow)
     MainWindow.show()
 
