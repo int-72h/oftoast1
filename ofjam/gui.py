@@ -496,9 +496,9 @@ class Ui_MainWindow(object):
             return
         app.processEvents()
         if platform.startswith('win32'):
-            #hl2 = "{sdk}\hl2.exe".format(sdk = sdkPath)
-            #run([hl2, "-game", ofpath], shell=True)
-            run(["start", "steam://rungameid/11677091221058336806"], shell=True)
+            sdk = str(sdkPath)
+            game = str(game_path)
+            run("start /d \"{}\" hl2.exe -game \"{}\"".format(sdk,game), shell=True)
         else:
             #hl2 = "{sdk}\hl2_linux".format(sdk = sdkPath)
             #run([hl2, "-game", ofpath])
