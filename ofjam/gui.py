@@ -92,7 +92,9 @@ class Ui_MainWindow(object):
         self.lineEdit = QtWidgets.QLineEdit(self.centralwidget)
         self.lineEdit.setGeometry(QtCore.QRect(100, 330, 421, 28))
         self.lineEdit.setObjectName("lineEdit")
-        self.lineEdit.setReadOnly(True)
+        self.lineEdit.setFont(QFont('Arial'))
+        clickable(self.lineEdit).connect(self.downloadWarning)
+        # self.lineEdit.setReadOnly(True)
         # self.lineEdit.setDisabled(True)
         self.label_2 = QtWidgets.QLabel(self.centralwidget)
         self.label_2.setGeometry(QtCore.QRect(100, 360, 121, 31))
@@ -100,6 +102,7 @@ class Ui_MainWindow(object):
         self.label_2.setObjectName("label_2")
         self.lineEdit_2 = QtWidgets.QLineEdit(self.centralwidget)
         self.lineEdit_2.setGeometry(QtCore.QRect(100, 390, 291, 28))
+        self.lineEdit_2.setFont(QFont('Arial'))
         clickable(self.lineEdit_2).connect(self.downloadWarning)
         self.label_4 = QtWidgets.QLabel(self.centralwidget)
         self.label_4.setGeometry(QtCore.QRect(100, 300, 121, 31))
@@ -183,7 +186,7 @@ class Ui_MainWindow(object):
         global version
         try:
             # self.pushButton.setText('Updating...')
-            self.label_status.setText('Updating...')
+            self.label_status.setText('Downloading...')
             self.pushButton.setDisabled(True)
             self.pushButton_2.setDisabled(True)
             self.pushButton_3.setDisabled(True)
@@ -302,10 +305,12 @@ class Ui_MainWindow(object):
     def clickMute(self):
         if not self.muted:
             self.muted = True
+            self.pushButton_5.setText("Unmute")
             if pygame.mixer.Channel(0).get_busy():
                 self.stop(0)
         else:
             self.muted = False
+            self.pushButton_5.setText("Mute")
             if not pygame.mixer.Channel(0).get_busy() and (self.downloading == True):
                 self.play(ResolvePath("toast.wav"), 0)
 
@@ -510,7 +515,7 @@ class Ui_MainWindow(object):
             self.wasWarned = True
             warnMsg = QMessageBox()
             warnMsg.setWindowTitle("Warning")
-            warnMsg.setText("Changing the Download URL is not advised. Only change it if you know what you're doing.")
+            warnMsg.setText("Changing any of these input boxes is not advised. Only change it if you know what you're doing.")
             warnMsg.exec_()
 
 
@@ -524,7 +529,7 @@ def get_latest_ver(url):
     r = httpx.get(url + "/reiversion", headers={'user-agent': user_agent}, follow_redirects=True)
     return r.text.strip()
 
-def work(arr):
+def work(arr,verif = False):
     certs = ResolvePath("ca-certificates.crt")
     if sys.platform.startswith('win32'):
         ariapath = ResolvePath("aria2c.exe")
@@ -534,6 +539,8 @@ def work(arr):
         ariapath = ResolvePath("./aria2c")
         cmd = '{} {} -o \"{}\" --checksum=md5={} --ca-certificate={} -d / -j 100 -m 10 -V -U {}/{}'.format(ariapath,arr[0],str(arr[1])[3:],arr[2],certs,user_agent,version)
     done = False
+    if (verif):
+        cmd = cmd + " --auto-file-renaming=false --allow-overwrite=true"
     while not done:
         fp = Popen(cmd, shell=True, stdout=PIPE)
         fp.wait()
@@ -541,7 +548,7 @@ def work(arr):
         if 'OK' in content[-1]:
             done = True
         else:
-            print(content[-1])
+            print(content)
 
 
 def work_verif(arr):
@@ -558,7 +565,7 @@ def work_verif(arr):
                 pass
             else:
                 print(arr[1], "failed verification, redownloading...")
-                work(arr)
+                work(arr,True)
         else:
             print(arr[1], "not found, redownloading...")
             work(arr)
