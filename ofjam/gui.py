@@ -228,8 +228,8 @@ class Ui_MainWindow(object):
         self.font2.setWeight(50)
         self.oftoast.setFont(self.font2)
         self.oftoast.setStyleSheet("color: rgb(238, 225, 207)")
-        # oftoast.setTextFormat(Qt.PlainText)
-        self.oftoast.setScaledContents(False)
+        self.oftoast.setTextFormat(Qt.PlainText)
+        self.oftoast.setScaledContents(True)
         self.line = QtWidgets.QFrame(self.centralwidget)
         self.line.setObjectName("line")
         self.line.setStyleSheet("color: rgb(238, 225, 207);")
@@ -949,7 +949,8 @@ def ariacheck():
             sys.exit()
 
 if __name__ == "__main__":
-    QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
+    QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
+    QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()
     advWindow = QtWidgets.QWidget()
