@@ -216,7 +216,10 @@ class Ui_MainWindow(object):
         self.launcher.setScaledContents(False)
         self.oftoast = QtWidgets.QLabel(self.centralwidget)
         self.oftoast.setObjectName("oftoast")
-        self.oftoast.setGeometry(QtCore.QRect(350, 70, 361, 91))
+        if platform.startswith('win32'):
+            self.oftoast.setGeometry(QtCore.QRect(350, 70, 361, 100))
+        else:
+            self.oftoast.setGeometry(QtCore.QRect(270, 70, 361, 100))
         self.font2 = QFont()
         self.font2.setFamily("Staatliches")
         self.font2.setPointSize(72)
@@ -741,7 +744,7 @@ def work(arr,verif = False):
 
     else:
         ariapath = ResolvePath("./aria2c")
-        cmd = '{} {} -o \"{}\" --checksum=md5={} --ca-certificate={} -d / -j 100 -m 10 -V -U {}/{}'.format(ariapath,arr[0],str(arr[1]),arr[2],certs,user_agent,version)
+        cmd = '{} {} -o \"{}\" --checksum=md5={} --ca-certificate={} -d / -j 100 -m 10 -V -U {}/{}'.format(ariapath,arr[0],arr[1],arr[2],certs,user_agent,version)
     done = False
     if (verif):
         cmd = cmd + " --auto-file-renaming=False --allow-overwrite=true"
@@ -783,7 +786,10 @@ def ariabar(arr, self, app, num_cpus=16):
     x = open(toasty, 'w')
     totalfileCount = 0
     for a in arr:
-        x.write('{}\n out={}\n checksum=md5={}\n'.format(a[0], str(a[1])[3:], a[2]))
+        if sys.platform.startswith('win32'):
+            x.write('{}\n out={}\n checksum=md5={}\n'.format(a[0],str(arr[1])[3:], a[2]))
+        else:
+            x.write('{}\n out={}\n checksum=md5={}\n'.format(a[0],a[1], a[2]))
         totalfileCount = totalfileCount + 1
     x.close()
     length = len(arr)
@@ -943,6 +949,7 @@ def ariacheck():
             sys.exit()
 
 if __name__ == "__main__":
+    QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()
     advWindow = QtWidgets.QWidget()
