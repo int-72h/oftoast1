@@ -3,12 +3,11 @@
 from tvn import *
 import argparse
 import os
+from subprocess import Popen,PIPE
 
-from concurrent.futures import ThreadPoolExecutor, as_completed
-#from ofrei.steam import *
+
 from pathlib import Path
 from sys import exit, stderr
-from shutil import copy,rmtree
 import httpx
 
 parser = argparse.ArgumentParser(description="Manage Open Fortress installation.")
@@ -44,18 +43,8 @@ changes = replay_changes(revisions)
 
 
 writes = list(filter(lambda x: x["type"] == TYPE_WRITE, changes))
-executor = ThreadPoolExecutor(int(num_threads))
 
 
-def work(x):
-    with httpx.Client(http2=True, headers={'user-agent': 'murse/0.0.2', 'Connection': 'keep-alive', 'Cache-Control': 'max-age=0'}) as client:
-        resp = client.get(args.u + "/objects/" + x["object"])
-        file = open(game_path / x["path"], "wb+")
-        file.write(resp.content)
-        file.close()
-
-
-#futures = {executor.submit(work, x): x for x in writes}
 try:
     os.remove(game_path / ".revision")
 except FileNotFoundError:
@@ -75,11 +64,14 @@ for x in list(filter(lambda x: x["type"] == TYPE_MKDIR, changes)):
     except FileNotFoundError:
         pass
     os.makedirs(game_path / x["path"], mode=0o777, exist_ok=True)
-futures = {}
+todl = open('todl.txt','w')
 for x in writes:
     if x["type"] == TYPE_WRITE:
-        futures[executor.submit(work, x)] = x
-for x in as_completed(futures):
-    print('WRITE ' + futures[x]["path"])
+        todl.write('{}\n out={}\n checksum=md5={}\n'.format(url+"objects/"+x["object"], game_path / str(x["path"]), x["hash"]))
+todl.close()
+fp = Popen('aria2c -i todl.txt -d . -x 12 -j 100 -m 10 -V -U murse/0.0.2', shell=True,stdin=PIPE, stdout=PIPE, universal_newlines=True)
+for line in fp.stdout:
+    print(line)
+
 (game_path / ".revision").touch(0o777)
 (game_path / ".revision").write_text(str(latest_revision))
