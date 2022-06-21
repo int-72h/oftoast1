@@ -16,7 +16,7 @@ from PyQt5.QtGui import QPalette, QColor, QFont, QFontDatabase
 import sys
 
 global version
-version = '0.3.0'
+version = '0.3.1'
 user_agent = 'toast_ua'
 default_url = 'https://toast.openfortress.fun/toast/'
 
@@ -169,9 +169,7 @@ class Ui_MainWindow(object):
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.label = QtWidgets.QLabel(self.centralwidget)
-        self.label.setGeometry(QtCore.QRect(50, 50, 161, 171))
-        self.label.setMinimumSize(QtCore.QSize(161, 171))
-        self.label.setMaximumSize(QtCore.QSize(161, 171))
+        self.label.setGeometry(QtCore.QRect(80, 60, 150, 150))
         self.label.setText("")
         self.label.setScaledContents(True)
         self.label.setPixmap(QtGui.QPixmap(ResolvePath("toast.png")))
@@ -204,9 +202,8 @@ class Ui_MainWindow(object):
         advWindow.setWindowIcon(icon)
         self.launcher = QtWidgets.QLabel(self.centralwidget)
         self.launcher.setObjectName("launcher")
-        self.launcher.setGeometry(QtCore.QRect(400, 160, 168, 41))
-        self.launcher.setMinimumSize(QtCore.QSize(168, 41))
-        self.launcher.setMaximumSize(QtCore.QSize(168, 41))
+        self.launcher.setGeometry(QtCore.QRect(260, 160, 361, 50))
+        self.launcher.setAlignment(Qt.AlignRight)
         self.font1 = QFont()
         self.font1.setFamily("Staatliches")
         self.font1.setPointSize(28)
@@ -219,9 +216,7 @@ class Ui_MainWindow(object):
         self.launcher.setScaledContents(False)
         self.oftoast = QtWidgets.QLabel(self.centralwidget)
         self.oftoast.setObjectName("oftoast")
-        self.oftoast.setGeometry(QtCore.QRect(270, 70, 361, 91))
-        self.oftoast.setMinimumSize(QtCore.QSize(361, 91))
-        self.oftoast.setMaximumSize(QtCore.QSize(361, 91))
+        self.oftoast.setGeometry(QtCore.QRect(350, 70, 361, 91))
         self.font2 = QFont()
         self.font2.setFamily("Staatliches")
         self.font2.setPointSize(72)
@@ -234,12 +229,16 @@ class Ui_MainWindow(object):
         self.oftoast.setScaledContents(False)
         self.line = QtWidgets.QFrame(self.centralwidget)
         self.line.setObjectName("line")
-        self.line.setGeometry(QtCore.QRect(30, 260, 591, 16))
+        self.line.setStyleSheet("color: rgb(238, 225, 207);")
+        self.line.setGeometry(QtCore.QRect(20, 260, 611, 16))
         self.line.setMaximumSize(QtCore.QSize(621, 16))
         self.line.setFrameShape(QtWidgets.QFrame.HLine)
         self.line.setFrameShadow(QtWidgets.QFrame.Sunken)
 
         self.progressBar = QtWidgets.QProgressBar(self.centralwidget)
+        p = QPalette()
+        p.setColor(QPalette.Highlight, QColor(144, 106, 172))
+        self.progressBar.setPalette(p)
         self.progressBar.setGeometry(QtCore.QRect(150, 340, 471, 23))
         self.progressBar.setProperty("value", 0)
         self.progressBar.setInvertedAppearance(False)
@@ -249,7 +248,7 @@ class Ui_MainWindow(object):
         self.progressBar.setVisible(False)
 
         self.progressBarText = QtWidgets.QLabel(self.centralwidget)
-        self.progressBarText.setGeometry(QtCore.QRect(200, 300, 168, 41))
+        self.progressBarText.setGeometry(QtCore.QRect(150, 300, 168, 41))
         self.progressBarText.setObjectName("progressBarText")
         self.progressBarText.setMinimumSize(QtCore.QSize(168, 41))
         self.progressBarText.setMaximumSize(QtCore.QSize(168, 41))
@@ -263,19 +262,19 @@ class Ui_MainWindow(object):
         self.font4.setPointSize(10)
 
         self.progressBarTextUnder = QtWidgets.QLabel(self.centralwidget)
-        self.progressBarTextUnder.setGeometry(QtCore.QRect(167, 370, 451, 45))
+        self.progressBarTextUnder.setGeometry(QtCore.QRect(152, 370, 451, 45))
         self.progressBarTextUnder.setObjectName("progressBarText")
         self.progressBarTextUnder.setFont(self.font4)
         self.progressBarTextUnder.setStyleSheet("color: rgb(238, 225, 207);")
         self.progressBarTextUnder.setVisible(False)
-        self.progressBarTextUnder.setAlignment(Qt.AlignRight)
+        self.progressBarTextUnder.setAlignment(Qt.AlignLeft)
         self.progressBarTextUnder.setVisible(False)
 
         MainWindow.setCentralWidget(self.centralwidget)
 
         self.launch = QtWidgets.QPushButton(self.centralwidget)
         self.launch.setObjectName("launch")
-        self.launch.setGeometry(QtCore.QRect(30, 290, 93, 28))
+        self.launch.setGeometry(QtCore.QRect(20, 290, 93, 28))
         self.font3 = QFont()
         self.font3.setFamily("Staatliches")
         self.font3.setPointSize(12)
@@ -284,20 +283,20 @@ class Ui_MainWindow(object):
 
         self.verify = QtWidgets.QPushButton(self.centralwidget)
         self.verify.setObjectName("verify")
-        self.verify.setGeometry(QtCore.QRect(30, 330, 93, 28))
+        self.verify.setGeometry(QtCore.QRect(20, 330, 93, 28))
         self.verify.setFont(self.font3)
         self.verify.setStyleSheet("color: rgb(238, 225, 207)")
         clickable(self.verify).connect(self.clickVerify)
 
         self.line_2 = QtWidgets.QFrame(self.centralwidget)
         self.line_2.setObjectName("line_2")
-        self.line_2.setGeometry(QtCore.QRect(30, 360, 91, 20))
-        self.line_2.setMaximumSize(QtCore.QSize(16777215, 16777215))
+        self.line_2.setGeometry(QtCore.QRect(20, 360, 91, 20))
+        self.line_2.setStyleSheet("color: rgb(238, 225, 207);")
         self.line_2.setFrameShape(QtWidgets.QFrame.HLine)
         self.line_2.setFrameShadow(QtWidgets.QFrame.Sunken)
         self.advanced = QtWidgets.QPushButton(self.centralwidget)
         self.advanced.setObjectName("advanced")
-        self.advanced.setGeometry(QtCore.QRect(30, 380, 93, 28))
+        self.advanced.setGeometry(QtCore.QRect(20, 380, 93, 28))
         self.advanced.setFont(self.font3)
         self.advanced.setStyleSheet("color: rgb(238, 225, 207)")
         clickable(self.advanced).connect(self.clickAdvanced)
@@ -311,24 +310,17 @@ class Ui_MainWindow(object):
 
         self.installed = QtWidgets.QLabel(self.centralwidget)
         self.installed.setObjectName("installed")
-        self.installed.setGeometry(QtCore.QRect(160, 290, 371, 41))
-        self.installed.setMinimumSize(QtCore.QSize(168, 41))
-        self.installed.setMaximumSize(QtCore.QSize(16777215, 16777215))
+        self.installed.setGeometry(QtCore.QRect(140, 290, 480, 50))
         self.installed.setFont(self.font1)
         self.installed.setStyleSheet("color: rgb(238, 225, 207)")
-        self.installed.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
-        # installed.setTextFormat(Qt.PlainText)
-        self.installed.setScaledContents(False)
+        self.installed.setAlignment(Qt.AlignRight)
+        
         self.latest = QtWidgets.QLabel(self.centralwidget)
         self.latest.setObjectName("latest")
-        self.latest.setGeometry(QtCore.QRect(160, 350, 371, 41))
-        self.latest.setMinimumSize(QtCore.QSize(168, 41))
-        self.latest.setMaximumSize(QtCore.QSize(16777215, 16777215))
+        self.latest.setGeometry(QtCore.QRect(140, 350, 480, 50))
         self.latest.setFont(self.font1)
         self.latest.setStyleSheet("color: rgb(238, 225, 207)")
-        self.latest.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
-        # latest.setTextFormat(Qt.PlainText)
-        self.latest.setScaledContents(False)
+        self.latest.setAlignment(Qt.AlignRight)
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
@@ -617,7 +609,6 @@ class Ui_MainWindow(object):
             self.downloading = False
             exitMsg.exec_()
             #exit(1)
-            self.label.setPixmap(QtGui.QPixmap(ResolvePath("toast.png")))
             existing_game_check(self, MainWindow)
             self.progressBar.setValue(0)
             return
@@ -873,7 +864,7 @@ def existing_game_check(ui, MainWindow):
     ui.progressBarText.setVisible(False)
     ui.progressBarTextUnder.setVisible(False)
     ui.latest.setVisible(True)
-    ui.installed.setGeometry(QtCore.QRect(160, 290, 371, 41))
+    ui.installed.setGeometry(QtCore.QRect(140, 290, 480, 50))
     ui.installed.setVisible(True)
     if ofpath != -1:
         sdk_download(ofpath.parents[1])
@@ -901,7 +892,7 @@ def existing_game_check(ui, MainWindow):
                 ui.verify.setStyleSheet("color: rgb(238, 225, 207);")
                 ui.verify.setEnabled(True)
         else:
-            ui.installed.setGeometry(QtCore.QRect(130, 290, 371, 41))
+            ui.installed.setGeometry(QtCore.QRect(140, 290, 480, 50))
             ui.installed.setText("Click Install now!")
             ui.latest.setVisible(False)
             ui.verify.setStyleSheet("color: rgb(84, 82, 82);background-color: rgb(37, 27, 45);") # grey
