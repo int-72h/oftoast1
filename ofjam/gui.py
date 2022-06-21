@@ -704,14 +704,14 @@ class Ui_MainWindow(object):
             existing_game_check(self, MainWindow)
             return
         app.processEvents()
+        sdk = str(sdkPath)
+        game = str(game_path)
         if platform.startswith('win32'):
-            sdk = str(sdkPath)
-            game = str(game_path)
             run("start /d \"{}\" hl2.exe -game \"{}\" {}".format(sdk,game,self.launchoptionsbox.text()), shell=True)
         else:
             #hl2 = "{sdk}\hl2_linux".format(sdk = sdkPath)
             #run([hl2, "-game", ofpath])
-            run(["xdg-open","steam://rungameid/11677091221058336806"])
+            run("xdg-open {}\hl2_linux -game \"{}\" {}".format(sdk,game,self.launchoptionsbox.text()))
         existing_game_check(self, MainWindow)
 
     def downloadWarning(self):
