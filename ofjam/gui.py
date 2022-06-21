@@ -741,7 +741,7 @@ def work(arr,verif = False):
 
     else:
         ariapath = ResolvePath("./aria2c")
-        cmd = '{} {} -o \"{}\" --checksum=md5={} --ca-certificate={} -d / -j 100 -m 10 -V -U {}/{}'.format(ariapath,arr[0],str(arr[1])[3:],arr[2],certs,user_agent,version)
+        cmd = '{} {} -o \"{}\" --checksum=md5={} --ca-certificate={} -d / -j 100 -m 10 -V -U {}/{}'.format(ariapath,arr[0],str(arr[1]),arr[2],certs,user_agent,version)
     done = False
     if (verif):
         cmd = cmd + " --auto-file-renaming=False --allow-overwrite=true"
