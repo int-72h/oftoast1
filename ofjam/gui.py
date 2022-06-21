@@ -499,11 +499,30 @@ class Ui_MainWindow(object):
             existing_game_check(self, MainWindow)
 
     def clickAdvanced(self):
-        advWindow.setVisible(True)
-        advWindow.setEnabled(True)
-        self.buttonBox.clicked.connect(self.advClose)
+        p = os.path.join(os.path.expanduser('~'), ".oftoast")
+        if os.path.exists("{}/launchoptions.txt".format(p)):
+            f = open("{}/launchoptions.txt".format(p), 'r')
+            self.launchoptionsbox.setText(f.read())
+            f.close()
+            advWindow.setVisible(True)
+            advWindow.setEnabled(True)
+            self.buttonBox.clicked.connect(self.advClose)
+        else:
+            if not os.path.exists(p):
+                os.makedirs(p)
+            f = open("{}/launchoptions.txt".format(p), 'w')
+            f.write(self.launchoptionsbox.text())
+            f.close()
+            advWindow.setVisible(True)
+            advWindow.setEnabled(True)
+            self.buttonBox.clicked.connect(self.advClose)
+
     
     def advClose(self):
+        p = os.path.join(os.path.expanduser('~'), ".oftoast")
+        f = open("{}/launchoptions.txt".format(p), 'w')
+        f.write(str(self.launchoptionsbox.text()))
+        f.close()
         self.launchoptionsbox.setText(str(self.launchoptionsbox.text()))
         self.gamedirbox.setText(str(self.gamedirbox.text()))
         self.downloadurl.setText(str(self.downloadurl.text()))
