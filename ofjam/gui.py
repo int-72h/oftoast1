@@ -714,7 +714,7 @@ class Ui_MainWindow(object):
         else:
             #hl2 = "{sdk}\hl2_linux".format(sdk = sdkPath)
             #run([hl2, "-game", ofpath])
-            run("xdg-open {}\hl2_linux -game \"{}\" {}".format(sdk,game,self.launchoptionsbox.text()))
+            Popen("\"{}/hl2.sh\" -game {} -secure -steam {}".format(sdk,game,self.launchoptionsbox.text()), shell=True)
         existing_game_check(self, MainWindow)
 
     def downloadWarning(self):
