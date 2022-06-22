@@ -12,7 +12,7 @@ from subprocess import Popen, PIPE,call
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import QObject, pyqtSignal, QEvent, Qt
 from PyQt5.QtWidgets import QApplication, QMessageBox, QInputDialog
-from PyQt5.QtGui import QPalette, QColor, QFont, QFontDatabase
+from PyQt5.QtGui import QPalette, QColor, QFont, QFontDatabase,QMovie
 import sys
 
 global version
@@ -194,7 +194,7 @@ class Ui_MainWindow(object):
         self.mute.setIcon(self.muteico)
         clickable(self.mute).connect(self.clickMute)
 
-        # self.movie = QMovie(ResolvePath("toast.gif"))
+        #self.movie = QMovie(ResolvePath("toast.gif"))
 
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap(ResolvePath("toast.png")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
@@ -800,9 +800,9 @@ def work_verif(arr):
 
 
 def ariabar(arr, self, app, num_cpus=16):
-    toasty = ResolvePath("todl.txt")
+    todl = ResolvePath("todl.txt")
     certs = ResolvePath("ca-certificates.crt")
-    x = open(toasty, 'w')
+    x = open(todl, 'w')
     totalfileCount = 0
     for a in arr:
         if sys.platform.startswith('win32'):
@@ -815,11 +815,12 @@ def ariabar(arr, self, app, num_cpus=16):
     z = 0
     if sys.platform.startswith('win32'):
         ariapath = ResolvePath("aria2c.exe")
-        fp = Popen('{} --ca-certificate={} -i {} -d C: -x {} -j 100 -m 10 -V -U {}/{}'.format(ariapath,certs,toasty, num_cpus,user_agent,version), shell=True,
+        drive = arr[0][1][:3]
+        fp = Popen('{} --ca-certificate={} -i {} -d {} -x {} -j 100 -m 10 -V -U {}/{}'.format(ariapath,certs,todl,drive,num_cpus,user_agent,version), shell=True,
                    stdin=PIPE, stdout=PIPE, universal_newlines=True)
     else:
         ariapath = ResolvePath("./aria2c")
-        fp = Popen('{} --ca-certificate={} -i {} -d / -x {} -j 100 -m 10 -V -U {}/{}'.format(ariapath,certs,toasty,num_cpus,user_agent,version), shell=True,stdin=PIPE, stdout=PIPE, universal_newlines=True)
+        fp = Popen('{} --ca-certificate={} -i {} -d / -x {} -j 100 -m 10 -V -U {}/{}'.format(ariapath,certs,todl,num_cpus,user_agent,version), shell=True,stdin=PIPE, stdout=PIPE, universal_newlines=True)
     done = False
     errs = []
     while not done:
