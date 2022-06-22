@@ -946,26 +946,6 @@ def set_theme(app, MainWindow, advWindow):
     palette.setColor(QPalette.HighlightedText, QColor(0, 0, 0))
     app.setPalette(palette)
 
-def ariacheck():
-    if sys.platform.startswith('win32'):
-        if getattr(sys, "frozen", False):
-            # PyInstaller executable
-            toasty = str(Path(sys._MEIPASS).resolve().joinpath("aria2c.exe"))
-        else:
-            # Raw .py file
-            toasty = "aria2c.exe"
-        rc = call([toasty,'-v'])
-        if rc != 0:
-            print('ok somethings gone wrong')
-    else:
-        rc = call(['which','aria2c'])
-        if rc != 0:
-            warnMsg = QMessageBox()
-            warnMsg.setWindowTitle("OFToast")
-            warnMsg.setText(
-                "You need to install aria2 from your package manager. OFToast won't function without it.")
-            warnMsg.setStandardButtons(QMessageBox.Ok)
-            sys.exit()
 
 if __name__ == "__main__":
     QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
@@ -976,7 +956,6 @@ if __name__ == "__main__":
     ui = Ui_MainWindow()
     set_theme(app, MainWindow,advWindow)
     ui.setupUi(app, MainWindow, advWindow)
-    ariacheck()
     existing_game_check(ui, MainWindow)
     MainWindow.show()
 
