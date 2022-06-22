@@ -162,7 +162,9 @@ class Ui_MainWindow(object):
         self.launchoptionsbox.setMinimumSize(QtCore.QSize(311, 31))
         self.launchoptionsbox.setMaximumSize(QtCore.QSize(311, 31))
 
-        clickable(self.gamedirbox).connect(self.downloadWarning)
+        self.gamedirbox.setStyleSheet("color: rgb(84, 82, 82);background-color: rgb(37, 27, 45);") # grey
+        self.gamedirbox.setEnabled(False)
+        # clickable(self.gamedirbox).connect(self.downloadWarning)
         clickable(self.downloadurlbox).connect(self.downloadWarning)
 
 
@@ -506,7 +508,6 @@ class Ui_MainWindow(object):
             f.close()
             advWindow.setVisible(True)
             advWindow.setEnabled(True)
-            self.buttonBox.clicked.connect(self.advClose)
         else:
             if not os.path.exists(p):
                 os.makedirs(p)
@@ -515,14 +516,30 @@ class Ui_MainWindow(object):
             f.close()
             advWindow.setVisible(True)
             advWindow.setEnabled(True)
-            self.buttonBox.clicked.connect(self.advClose)
-
+        if os.path.exists("{}/gamedir.txt".format(p)):
+            f = open("{}/gamedir.txt".format(p), 'r')
+            self.gamedirbox.setText(f.read())
+            f.close()
+            advWindow.setVisible(True)
+            advWindow.setEnabled(True)
+        else:
+            if not os.path.exists(p):
+                os.makedirs(p)
+            f = open("{}/gamedir.txt".format(p), 'w')
+            f.write(self.gamedirbox.text())
+            f.close()
+            advWindow.setVisible(True)
+            advWindow.setEnabled(True)
+        self.buttonBox.clicked.connect(self.advClose)
     
     def advClose(self):
         p = os.path.join(os.path.expanduser('~'), ".oftoast")
         f = open("{}/launchoptions.txt".format(p), 'w')
         f.write(str(self.launchoptionsbox.text()))
         f.close()
+        g = open("{}/launchoptions.txt".format(p), 'w')
+        g.write(str(self.gamedirbox.text()))
+        g.close()
         self.launchoptionsbox.setText(str(self.launchoptionsbox.text()))
         self.gamedirbox.setText(str(self.gamedirbox.text()))
         self.downloadurl.setText(str(self.downloadurl.text()))
@@ -759,14 +776,15 @@ def work(arr,verif = False):
     certs = ResolvePath("ca-certificates.crt")
     if sys.platform.startswith('win32'):
         ariapath = ResolvePath("aria2c.exe")
-        cmd = '{} {} -o \"{}\" --checksum=md5={} --ca-certificate={} -d C: -j 100 -m 10 -V -U {}/{}'.format(ariapath,arr[0],str(arr[1])[3:],arr[2],certs,user_agent,version)
+        drive = str(arr[1])[:2]
+        cmd = '{} {} -o \"{}\" --checksum=md5={} --ca-certificate={} -d {} -j 100 -m 10 -V -U {}/{}'.format(ariapath,arr[0],str(arr[1])[3:],arr[2],certs,drive,user_agent,version)
 
     else:
         ariapath = ResolvePath("./aria2c")
         cmd = '{} {} -o \"{}\" --checksum=md5={} --ca-certificate={} -d / -j 100 -m 10 -V -U {}/{}'.format(ariapath,arr[0],arr[1],arr[2],certs,user_agent,version)
     done = False
     if (verif):
-        cmd = cmd + " --auto-file-renaming=False --allow-overwrite=true"
+        cmd = cmd + " --auto-file-renaming=false --allow-overwrite=true"
     while not done:
         fp = Popen(cmd, shell=True, stdout=PIPE)
         fp.wait()
@@ -806,7 +824,7 @@ def ariabar(arr, self, app, num_cpus=16):
     totalfileCount = 0
     for a in arr:
         if sys.platform.startswith('win32'):
-            x.write('{}\n out={}\n checksum=md5={}\n'.format(a[0],str(arr[1])[3:], a[2]))
+            x.write('{}\n out={}\n checksum=md5={}\n'.format(a[0],str(a[1])[3:], a[2]))
         else:
             x.write('{}\n out={}\n checksum=md5={}\n'.format(a[0],a[1], a[2]))
         totalfileCount = totalfileCount + 1
@@ -815,7 +833,7 @@ def ariabar(arr, self, app, num_cpus=16):
     z = 0
     if sys.platform.startswith('win32'):
         ariapath = ResolvePath("aria2c.exe")
-        drive = arr[0][1][:3]
+        drive = str(arr[0][1])[:2]
         fp = Popen('{} --ca-certificate={} -i {} -d {} -x {} -j 100 -m 10 -V -U {}/{}'.format(ariapath,certs,todl,drive,num_cpus,user_agent,version), shell=True,
                    stdin=PIPE, stdout=PIPE, universal_newlines=True)
     else:
@@ -831,8 +849,8 @@ def ariabar(arr, self, app, num_cpus=16):
                 z = z + 1
                 self.progressBar.setValue(z)
                 self.progressBar.setMaximum(length)
-                fileName = l.split("sourcemods/")[1]
-                self.progressBarTextUnder.setText("{} {}/{}".format(fileName,z,totalfileCount))
+                fileName = l.split("open_fortress")[1]
+                self.progressBarTextUnder.setText("open_fortress{} {}/{}".format(fileName,z,totalfileCount))
                 if not self.muted:
                     if not pygame.mixer.Channel(0).get_busy():
                         self.play(ResolvePath("toast.wav"), 0)
