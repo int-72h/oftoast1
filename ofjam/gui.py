@@ -516,20 +516,20 @@ class Ui_MainWindow(object):
             f.close()
             advWindow.setVisible(True)
             advWindow.setEnabled(True)
-        if os.path.exists("{}/gamedir.txt".format(p)):
-            f = open("{}/gamedir.txt".format(p), 'r')
-            self.gamedirbox.setText(f.read())
-            f.close()
-            advWindow.setVisible(True)
-            advWindow.setEnabled(True)
-        else:
-            if not os.path.exists(p):
-                os.makedirs(p)
-            f = open("{}/gamedir.txt".format(p), 'w')
-            f.write(self.gamedirbox.text())
-            f.close()
-            advWindow.setVisible(True)
-            advWindow.setEnabled(True)
+        #if os.path.exists("{}/gamedir.txt".format(p)):
+        #    f = open("{}/gamedir.txt".format(p), 'r')
+        #    self.gamedirbox.setText(f.read())
+        #    f.close()
+        #    advWindow.setVisible(True)
+        #    advWindow.setEnabled(True)
+        #else:
+        #    if not os.path.exists(p):
+        #        os.makedirs(p)
+        #    f = open("{}/gamedir.txt".format(p), 'w')
+        #    f.write(self.gamedirbox.text())
+        #    f.close()
+        #    advWindow.setVisible(True)
+        #    advWindow.setEnabled(True)
         self.buttonBox.clicked.connect(self.advClose)
     
     def advClose(self):
@@ -537,9 +537,9 @@ class Ui_MainWindow(object):
         f = open("{}/launchoptions.txt".format(p), 'w')
         f.write(str(self.launchoptionsbox.text()))
         f.close()
-        g = open("{}/launchoptions.txt".format(p), 'w')
-        g.write(str(self.gamedirbox.text()))
-        g.close()
+        #g = open("{}/launchoptions.txt".format(p), 'w')
+        #g.write(str(self.gamedirbox.text()))
+        #g.close()
         self.launchoptionsbox.setText(str(self.launchoptionsbox.text()))
         self.gamedirbox.setText(str(self.gamedirbox.text()))
         self.downloadurl.setText(str(self.downloadurl.text()))
