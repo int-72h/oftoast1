@@ -729,7 +729,7 @@ class Ui_MainWindow(object):
         sdk = str(sdkPath)
         game = str(game_path)
         if platform.startswith('win32'):
-            run("start /d \"{}\" hl2.exe -game -secure -steam \"{}\" {}".format(sdk,game,self.launchoptionsbox.text()), shell=True)
+            run("start /d \"{}\" hl2.exe -game \"{}\" -secure -steam {}".format(sdk,game,self.launchoptionsbox.text()), shell=True)
         else:
             #hl2 = "{sdk}\hl2_linux".format(sdk = sdkPath)
             #run([hl2, "-game", ofpath])
