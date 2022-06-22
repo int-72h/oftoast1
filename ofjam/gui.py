@@ -5,21 +5,23 @@ from sys import exit
 from tvn import *
 import httpx
 import traceback
-import shutil
 import hashlib
-
+import pygame
+from time import time,sleep
+from subprocess import Popen, PIPE,call
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import QObject, pyqtSignal, QEvent
-from PyQt5.QtWidgets import QApplication, QMessageBox, QFileDialog
-from PyQt5.QtGui import QPalette, QColor, QFont
+from PyQt5.QtCore import QObject, pyqtSignal, QEvent, Qt
+from PyQt5.QtWidgets import QApplication, QMessageBox, QInputDialog
+from PyQt5.QtGui import QPalette, QColor, QFont, QFontDatabase,QMovie
 import sys
 
 global version
-version = '0.2.5'
+version = '0.3.1'
 user_agent = 'toast_ua'
+default_url = 'https://toast.openfortress.fun/toast/'
 
 
-def clickable(widget): # make this function global
+def clickable(widget):  # make this function global
     class Filter(QObject):
         clicked = pyqtSignal()
 
@@ -29,97 +31,299 @@ def clickable(widget): # make this function global
                 return True
             else:
                 return False
+
     filter = Filter(widget)
     widget.installEventFilter(filter)
     return filter.clicked
+def ResolvePath(obj):
+    if getattr(sys, "frozen", False):
+        # PyInstaller executable
+        return str(Path(sys._MEIPASS).resolve().joinpath(Path(obj)))
+    else:
+        # Raw .py file
+        return obj
+
+
 
 class Ui_MainWindow(object):
     wasWarned = False
     verWarned = False
-    def setupUi(self, app, MainWindow):
+    muted = True
+    downloading = False
+    def play(self,path,chan):
+        if not self.muted:
+            pygame.mixer.Channel(chan).play(pygame.mixer.Sound(path))
+    def stop(self,chan):
+        pygame.mixer.Channel(chan).stop()
+    def setupUi(self, app, MainWindow, advWindow):
+        pygame.init()
+        pygame.mixer.set_num_channels(10)
+        font_db = QFontDatabase()
+        font_db.addApplicationFont(ResolvePath("Staatliches-Regular.ttf"))
+        font_db.addApplicationFont(ResolvePath("Roboto-Regular.ttf"))
+        # families = font_db.applicationFontFamilies(font_id)
+        font = QFont("Staatliches")
+        QApplication.setFont(font)
         MainWindow.setObjectName("MainWindow")
         MainWindow.setEnabled(True)
-        MainWindow.resize(720, 480)
+        MainWindow.resize(653, 450)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(MainWindow.sizePolicy().hasHeightForWidth())
         MainWindow.setSizePolicy(sizePolicy)
-        MainWindow.setMinimumSize(QtCore.QSize(720, 480))
-        MainWindow.setMaximumSize(QtCore.QSize(720, 480))
+        MainWindow.setMinimumSize(QtCore.QSize(653, 450))
+        MainWindow.setMaximumSize(QtCore.QSize(653, 450))
         MainWindow.setAcceptDrops(False)
         MainWindow.setWindowOpacity(1.0)
         MainWindow.setAnimated(True)
         MainWindow.setTabShape(QtWidgets.QTabWidget.Rounded)
+
+        advWindow.setObjectName("advWindow")
+        advWindow.setWindowTitle("Advanced Settings")
+        advWindow.setEnabled(False)
+        advWindow.resize(597, 254)
+        advWindow.setSizePolicy(sizePolicy)
+        advWindow.setMinimumSize(QtCore.QSize(597, 254))
+        advWindow.setMaximumSize(QtCore.QSize(597, 254))
+        advWindow.setAcceptDrops(False)
+        advWindow.setWindowOpacity(1.0)
+
+        self.centralwidget2 = QtWidgets.QWidget(advWindow)
+        self.centralwidget2.setObjectName("centralwidget2")
+
+        self.downloadurl = QtWidgets.QLabel(self.centralwidget2)
+        self.downloadurl.setObjectName("downloadurl")
+        self.downloadurl.setGeometry(QtCore.QRect(30, 40, 193, 35))
+        self.downloadurl.setMinimumSize(QtCore.QSize(193, 35))
+        self.downloadurl.setMaximumSize(QtCore.QSize(193, 35))
+        self.font5 = QFont()
+        self.font5.setFamily("Staatliches")
+        self.font5.setPointSize(20)
+        self.font5.setBold(False)
+        self.font5.setItalic(False)
+        self.font5.setWeight(50)
+        self.downloadurl.setFont(self.font5)
+        self.downloadurl.setStyleSheet("color: rgb(238, 225, 207);")
+        self.downloadurl.setTextFormat(Qt.PlainText)
+        self.downloadurl.setScaledContents(False)
+        self.downloadurl.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
+        self.gamedir = QtWidgets.QLabel(self.centralwidget2)
+        self.gamedir.setObjectName("gamedir")
+        self.gamedir.setGeometry(QtCore.QRect(30, 100, 193, 35))
+        self.gamedir.setMinimumSize(QtCore.QSize(193, 35))
+        self.gamedir.setMaximumSize(QtCore.QSize(193, 35))
+        self.gamedir.setFont(self.font5);
+        self.gamedir.setStyleSheet("color: rgb(238, 225, 207);")
+        self.gamedir.setTextFormat(Qt.PlainText)
+        self.gamedir.setScaledContents(False)
+        self.gamedir.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
+        self.launchoptions = QtWidgets.QLabel(self.centralwidget2)
+        self.launchoptions.setObjectName("launchoptions")
+        self.launchoptions.setGeometry(QtCore.QRect(30, 160, 193, 35))
+        self.launchoptions.setMinimumSize(QtCore.QSize(193, 35))
+        self.launchoptions.setMaximumSize(QtCore.QSize(193, 35))
+        self.launchoptions.setFont(self.font5)
+        self.launchoptions.setStyleSheet("color: rgb(238, 225, 207);")
+        self.launchoptions.setTextFormat(Qt.PlainText)
+        self.launchoptions.setScaledContents(False)
+        self.launchoptions.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
+        self.buttonBox = QtWidgets.QDialogButtonBox(self.centralwidget2)
+        self.buttonBox.setObjectName("buttonBox")
+        self.buttonBox.setGeometry(QtCore.QRect(200, 220, 193, 28))
+        self.buttonBox.setMinimumSize(QtCore.QSize(193, 28))
+        self.buttonBox.setMaximumSize(QtCore.QSize(193, 28))
+        self.font6 = QFont()
+        self.font6.setFamily("Staatliches")
+        self.font6.setPointSize(12)
+        self.font7 = QFont()
+        self.font7.setFamily("Roboto")
+        self.font7.setPointSize(12)
+        self.buttonBox.setFont(self.font7)
+        self.buttonBox.setStyleSheet("color: rgb(238, 225, 207);")
+        self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Ok)
+        self.buttonBox.setCenterButtons(True)
+        self.downloadurlbox = QtWidgets.QLineEdit(self.centralwidget2)
+        self.downloadurlbox.setFont(self.font7)
+        self.downloadurlbox.setObjectName("downloadurlbox")
+        self.downloadurlbox.setGeometry(QtCore.QRect(250, 44, 311, 31))
+        self.downloadurlbox.setMinimumSize(QtCore.QSize(311, 31))
+        self.downloadurlbox.setMaximumSize(QtCore.QSize(311, 31))
+        self.gamedirbox = QtWidgets.QLineEdit(self.centralwidget2)
+        self.gamedirbox.setFont(self.font7)
+        self.gamedirbox.setObjectName("gamedirbox")
+        self.gamedirbox.setGeometry(QtCore.QRect(250, 100, 311, 31))
+        self.gamedirbox.setMinimumSize(QtCore.QSize(311, 31))
+        self.gamedirbox.setMaximumSize(QtCore.QSize(311, 31))
+        self.launchoptionsbox = QtWidgets.QLineEdit(self.centralwidget2)
+        self.launchoptionsbox.setFont(self.font7)
+        self.launchoptionsbox.setObjectName("launchoptionsbox")
+        self.launchoptionsbox.setGeometry(QtCore.QRect(250, 160, 311, 31))
+        self.launchoptionsbox.setMinimumSize(QtCore.QSize(311, 31))
+        self.launchoptionsbox.setMaximumSize(QtCore.QSize(311, 31))
+
+        clickable(self.gamedirbox).connect(self.downloadWarning)
+        clickable(self.downloadurlbox).connect(self.downloadWarning)
+
+
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.label = QtWidgets.QLabel(self.centralwidget)
-        self.label.setGeometry(QtCore.QRect(295, 20, 131, 141))
+        self.label.setGeometry(QtCore.QRect(20, 60, 150, 150))
         self.label.setText("")
-        if getattr(sys, "frozen", False):
-            # PyInstaller executable
-            toasty = str(Path(sys._MEIPASS).resolve().joinpath("toast.png"))
-        else:
-            # Raw .py file
-            toasty = "toast.png"
-        self.label.setPixmap(QtGui.QPixmap(toasty))
+        self.label.setScaledContents(True)
+        self.label.setPixmap(QtGui.QPixmap(ResolvePath("toast.png")))
+
+        self.secret = QtWidgets.QLabel(self.centralwidget)
+        self.secret.setGeometry(QtCore.QRect(50, 50, 161, 171))
+        self.secret.setMinimumSize(QtCore.QSize(161, 171))
+        self.secret.setMaximumSize(QtCore.QSize(161, 171))
+        self.secret.setText("")
+        self.secret.setScaledContents(True)
+        self.secret.setPixmap(QtGui.QPixmap(ResolvePath("how.png")))
+        self.secret.setVisible(False)
+
+        self.mute = QtWidgets.QPushButton(self.centralwidget)
+        self.mute.setObjectName("mute")
+        self.mute.setText("")
+        self.mute.setGeometry(QtCore.QRect(20, 20, 31, 28))
+        self.muteico = QtGui.QIcon()
+        self.muteico.addPixmap(QtGui.QPixmap(ResolvePath("muted.png")))
+        self.upico = QtGui.QIcon()
+        self.upico.addPixmap(QtGui.QPixmap(ResolvePath("up.png")))       
+        self.mute.setIcon(self.muteico)
+        clickable(self.mute).connect(self.clickMute)
+
+        #self.movie = QMovie(ResolvePath("toast.gif"))
+
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap(toasty), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon.addPixmap(QtGui.QPixmap(ResolvePath("toast.png")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         MainWindow.setWindowIcon(icon)
-        self.label.setAlignment(QtCore.Qt.AlignCenter)
-        self.label.setObjectName("label")
-        self.lineEdit = QtWidgets.QLineEdit(self.centralwidget)
-        self.lineEdit.setGeometry(QtCore.QRect(100, 330, 421, 28))
-        self.lineEdit.setObjectName("lineEdit")
-        self.lineEdit.setReadOnly(True)
-        #self.lineEdit.setDisabled(True)
-        self.label_2 = QtWidgets.QLabel(self.centralwidget)
-        self.label_2.setGeometry(QtCore.QRect(100, 360, 121, 31))
-        #self.label_2.setAlignment(QtCore.Qt.AlignCenter)
-        self.label_2.setObjectName("label_2")
-        self.lineEdit_2 = QtWidgets.QLineEdit(self.centralwidget)
-        self.lineEdit_2.setGeometry(QtCore.QRect(100, 390, 291, 28))
-        clickable(self.lineEdit_2).connect(self.downloadWarning)
-        self.label_4 = QtWidgets.QLabel(self.centralwidget)
-        self.label_4.setGeometry(QtCore.QRect(100, 300, 121, 31))
-        self.label_4.setObjectName("label_4")
-        self.lineEdit_2.setObjectName("lineEdit_2")
-        self.label_status = QtWidgets.QLabel(self.centralwidget)
-        self.label_status.setGeometry(QtCore.QRect(100, 180, 521, 40))
-        self.label_status.setObjectName("label_status")
-        self.label_status.setFont(QFont('Arial', 20))
-        self.label_status.setAlignment(QtCore.Qt.AlignCenter)
+        advWindow.setWindowIcon(icon)
+        self.launcher = QtWidgets.QLabel(self.centralwidget)
+        self.launcher.setObjectName("launcher")
+        self.launcher.setGeometry(QtCore.QRect(260, 160, 361, 50))
+        self.launcher.setAlignment(Qt.AlignRight)
+        self.font1 = QFont()
+        self.font1.setFamily("Staatliches")
+        self.font1.setPointSize(28)
+        self.font1.setBold(False)
+        self.font1.setItalic(False)
+        self.font1.setWeight(50)
+        self.launcher.setFont(self.font1)
+        self.launcher.setStyleSheet("color: rgb(238, 225, 207)")
+        # launcher.setTextFormat(Qt.PlainText)
+        self.launcher.setScaledContents(False)
+        self.oftoast = QtWidgets.QLabel(self.centralwidget)
+        self.oftoast.setObjectName("oftoast")
+        if platform.startswith('win32'):
+            self.oftoast.setGeometry(QtCore.QRect(350, 70, 361, 100))
+        else:
+            self.oftoast.setGeometry(QtCore.QRect(270, 70, 361, 100))
+        self.font2 = QFont()
+        self.font2.setFamily("Staatliches")
+        self.font2.setPointSize(72)
+        self.font2.setBold(False)
+        self.font2.setItalic(False)
+        self.font2.setWeight(50)
+        self.oftoast.setFont(self.font2)
+        self.oftoast.setStyleSheet("color: rgb(238, 225, 207)")
+        self.oftoast.setTextFormat(Qt.PlainText)
+        self.oftoast.setScaledContents(True)
+        self.line = QtWidgets.QFrame(self.centralwidget)
+        self.line.setObjectName("line")
+        self.line.setStyleSheet("color: rgb(238, 225, 207);")
+        self.line.setGeometry(QtCore.QRect(20, 260, 611, 16))
+        self.line.setMaximumSize(QtCore.QSize(621, 16))
+        self.line.setFrameShape(QtWidgets.QFrame.HLine)
+        self.line.setFrameShadow(QtWidgets.QFrame.Sunken)
+
         self.progressBar = QtWidgets.QProgressBar(self.centralwidget)
-        self.progressBar.setGeometry(QtCore.QRect(100, 230, 521, 16))
+        p = QPalette()
+        p.setColor(QPalette.Highlight, QColor(144, 106, 172))
+        self.progressBar.setPalette(p)
+        self.progressBar.setGeometry(QtCore.QRect(150, 340, 471, 23))
         self.progressBar.setProperty("value", 0)
         self.progressBar.setInvertedAppearance(False)
         self.progressBar.setTextDirection(QtWidgets.QProgressBar.TopToBottom)
         self.progressBar.setFormat("")
         self.progressBar.setObjectName("progressBar")
-        self.pushButton = QtWidgets.QPushButton(self.centralwidget)
-        self.pushButton.setGeometry(QtCore.QRect(100, 430, 90, 28))
-        self.pushButton.setObjectName("pushButton")
-        self.pushButton.clicked.connect(self.clickUpdate)
-        self.pushButton_2 = QtWidgets.QPushButton(self.centralwidget)
-        self.pushButton_2.setGeometry(QtCore.QRect(580, 430, 90, 28))
-        self.pushButton_2.setObjectName("pushButton_2")
-        self.pushButton_2.clicked.connect(self.clickCancel)
-        self.label_3 = QtWidgets.QLabel(self.centralwidget)
-        self.label_3.setGeometry(QtCore.QRect(110, 133, 211, 20))
-        self.pushButton_3 = QtWidgets.QPushButton(self.centralwidget)
-        self.pushButton_3.setGeometry(QtCore.QRect(200, 430, 90, 28))
+        self.progressBar.setVisible(False)
 
-        self.pushButton_3.setObjectName("pushButton_3")
-        self.pushButton_3.clicked.connect(self.clickVerify)
-        self.pushButton_4 = QtWidgets.QPushButton(self.centralwidget)
-        self.pushButton_4.setGeometry(QtCore.QRect(300, 430, 90, 28))
-        self.pushButton_4.setObjectName("pushButton_4")
-        self.pushButton_4.clicked.connect(self.clickLaunch)
-        self.label_3 = QtWidgets.QLabel(self.centralwidget)
-        self.label_3.setGeometry(QtCore.QRect(100, 250, 211, 20))
-        #self.label_3.setAlignment(QtCore.Qt.AlignCenter)
-        self.label_3.setObjectName("label_3")
+        self.progressBarText = QtWidgets.QLabel(self.centralwidget)
+        self.progressBarText.setGeometry(QtCore.QRect(150, 300, 168, 41))
+        self.progressBarText.setObjectName("progressBarText")
+        self.progressBarText.setMinimumSize(QtCore.QSize(168, 41))
+        self.progressBarText.setMaximumSize(QtCore.QSize(168, 41))
+        self.progressBarText.setFont(self.font1)
+        self.progressBarText.setStyleSheet("color: rgb(238, 225, 207);")
+        self.progressBarText.setScaledContents(False)
+        self.progressBarText.setVisible(False)
+
+        self.font4 = QFont()
+        self.font4.setFamily("Roboto")
+        self.font4.setPointSize(10)
+
+        self.progressBarTextUnder = QtWidgets.QLabel(self.centralwidget)
+        self.progressBarTextUnder.setGeometry(QtCore.QRect(152, 370, 451, 45))
+        self.progressBarTextUnder.setObjectName("progressBarText")
+        self.progressBarTextUnder.setFont(self.font4)
+        self.progressBarTextUnder.setStyleSheet("color: rgb(238, 225, 207);")
+        self.progressBarTextUnder.setVisible(False)
+        self.progressBarTextUnder.setAlignment(Qt.AlignLeft)
+        self.progressBarTextUnder.setVisible(False)
+
         MainWindow.setCentralWidget(self.centralwidget)
+
+        self.launch = QtWidgets.QPushButton(self.centralwidget)
+        self.launch.setObjectName("launch")
+        self.launch.setGeometry(QtCore.QRect(20, 290, 93, 28))
+        self.font3 = QFont()
+        self.font3.setFamily("Staatliches")
+        self.font3.setPointSize(12)
+        self.launch.setFont(self.font3)
+        self.launch.setStyleSheet("color: rgb(238, 225, 207)")
+
+        self.verify = QtWidgets.QPushButton(self.centralwidget)
+        self.verify.setObjectName("verify")
+        self.verify.setGeometry(QtCore.QRect(20, 330, 93, 28))
+        self.verify.setFont(self.font3)
+        self.verify.setStyleSheet("color: rgb(238, 225, 207)")
+        clickable(self.verify).connect(self.clickVerify)
+
+        self.line_2 = QtWidgets.QFrame(self.centralwidget)
+        self.line_2.setObjectName("line_2")
+        self.line_2.setGeometry(QtCore.QRect(20, 360, 91, 20))
+        self.line_2.setStyleSheet("color: rgb(238, 225, 207);")
+        self.line_2.setFrameShape(QtWidgets.QFrame.HLine)
+        self.line_2.setFrameShadow(QtWidgets.QFrame.Sunken)
+        self.advanced = QtWidgets.QPushButton(self.centralwidget)
+        self.advanced.setObjectName("advanced")
+        self.advanced.setGeometry(QtCore.QRect(20, 380, 93, 28))
+        self.advanced.setFont(self.font3)
+        self.advanced.setStyleSheet("color: rgb(238, 225, 207)")
+        clickable(self.advanced).connect(self.clickAdvanced)
+
+
+        self.secretText = QtWidgets.QLabel(self.centralwidget)
+        self.secretText.setObjectName("secretText")
+        self.secretText.setGeometry(QtCore.QRect(400, 220, 168, 41))
+        self.secretText.setFont(self.font1)
+        self.secretText.setVisible(False)
+
+        self.installed = QtWidgets.QLabel(self.centralwidget)
+        self.installed.setObjectName("installed")
+        self.installed.setGeometry(QtCore.QRect(140, 290, 480, 50))
+        self.installed.setFont(self.font1)
+        self.installed.setStyleSheet("color: rgb(238, 225, 207)")
+        self.installed.setAlignment(Qt.AlignRight)
+        
+        self.latest = QtWidgets.QLabel(self.centralwidget)
+        self.latest.setObjectName("latest")
+        self.latest.setGeometry(QtCore.QRect(140, 350, 480, 50))
+        self.latest.setFont(self.font1)
+        self.latest.setStyleSheet("color: rgb(238, 225, 207)")
+        self.latest.setAlignment(Qt.AlignRight)
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
@@ -127,41 +331,70 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "OFToast " + version))
-        self.lineEdit.setText(_translate("MainWindow", "GAMEDIR"))
-        self.label_2.setText(_translate("MainWindow", "Download URL:"))
-        self.label_4.setText(_translate("MainWindow", "Install Folder:"))
-        self.label_status.setText(_translate("MainWindow", "Waiting to Download"))
-        self.lineEdit_2.setText(_translate("MainWindow", "https://toast.openfortress.fun/toast"))            
-        self.pushButton.setText(_translate("MainWindow", "Install"))
-        self.pushButton_2.setText(_translate("MainWindow", "Cancel"))
-        self.pushButton_3.setText(_translate("MainWindow", "Verify"))
-        self.label_3.setText(_translate("MainWindow", "Installed Revision: None"))
-        self.pushButton_4.setText(_translate("MainWindow", "Launch"))
+        self.launcher.setText(_translate("MainWindow", "Launcher"))
+        self.oftoast.setText(_translate("MainWindow", "OFToast"))
+        self.launch.setText(_translate("MainWindow", "Launch"))
+        self.verify.setText(_translate("MainWindow", "Verify"))
+        self.secretText.setText(_translate("MainWindow", "HOW?"))
+        self.advanced.setText(_translate("MainWindow", "Advanced"))
+        self.installed.setText(_translate("MainWindow", "Current Game Version:"))
+        self.latest.setText(_translate("MainWindow", "Latest Game Version:"))
+        self.progressBarText.setText(_translate("MainWindow", "Installing..."))
+        self.progressBarTextUnder.setText(_translate("MainWindow", ""))
+        self.downloadurl.setText(_translate("MainWindow", "Download URL:"))
+        self.gamedir.setText(_translate("MainWindow", "Game Directory:"))
+        self.launchoptions.setText(_translate("MainWindow", "Launch Options:"))
+        self.downloadurlbox.setText(_translate("MainWindow", "https://toast.openfortress.fun/toast/"))
+        self.gamedirbox.setText(_translate("MainWindow", "GAMEDIR"))
+        self.launchoptionsbox.setText(_translate("MainWindow", "-console"))
 
-    def clickBrowse(self):
-        temp = self.lineEdit.text()
-        gamepath = QFileDialog.getExistingDirectory(MainWindow, "Game path", "")
-        if gamepath == '':
-            self.lineEdit.setText(temp)
-        else:
-            self.lineEdit.setText(gamepath)
-        revision = get_installed_revision(Path(self.lineEdit.text()))
-        if revision >= 0:
-            self.label_3.setText("Installed Revision: " + str(revision))
-        else:
-            self.label_3.setText("Installed Revision: None")
+        # self.lineEdit.setText(_translate("MainWindow", "GAMEDIR"))
+        # self.label_2.setText(_translate("MainWindow", "Download URL:"))
+        # self.label_4.setText(_translate("MainWindow", "Install Folder:"))
+        # self.label_status.setText(_translate("MainWindow", "Waiting to Download"))
+        # self.lineEdit_2.setText(_translate("MainWindow", "https://toast.openfortress.fun/toast"))
+        #self.pushButton.setText(_translate("MainWindow", "Install"))
+        #self.pushButton_2.setText(_translate("MainWindow", "Advanced"))
+        #self.pushButton_3.setText(_translate("MainWindow", "Verify"))
+        #self.pushButton_5.setText(_translate("MainWindow", "Unmute"))
+        #self.label_3.setText(_translate("MainWindow", "Installed Revision: None"))
+        #self.pushButton_4.setText(_translate("MainWindow", "Launch"))
+
+    #def clickBrowse(self):
+    #    temp = self.lineEdit.text()
+    #    gamepath = QFileDialog.getExistingDirectory(MainWindow, "Game path", "")
+    #    if gamepath == '':
+    #        self.lineEdit.setText(temp)
+    #    else:
+    #        self.lineEdit.setText(gamepath)
+    #    revision = get_installed_revision(Path(self.lineEdit.text()))
+    #    if revision >= 0:
+    #        self.label_3.setText("Installed Revision: " + str(revision))
+    #    else:
+    #        self.label_3.setText("Installed Revision: None")
 
     def clickUpdate(self):
+        self.play(ResolvePath("toast.wav"),0)
+        self.play(ResolvePath("start.wav"),1)
         global version
         try:
-            #self.pushButton.setText('Updating...')
-            self.label_status.setText('Updating...')
-            self.pushButton.setDisabled(True)
-            self.pushButton_2.setDisabled(True)
-            self.pushButton_3.setDisabled(True)
+            # self.pushButton.setText('Updating...')
+            self.progressBarText.setFont(self.font5)
+            self.progressBarText.setText('Downloading...')
+            self.progressBarTextUnder.setVisible(True)
+            self.progressBar.setVisible(True)
+            self.progressBarText.setVisible(True)
+            self.installed.setVisible(False)
+            self.latest.setVisible(False)
+            self.verify.setStyleSheet("color: rgb(84, 82, 82);background-color: rgb(37, 27, 45);") # grey
+            self.verify.setEnabled(False)
+            self.launch.setStyleSheet("color: rgb(84, 82, 82);background-color: rgb(37, 27, 45);") # grey
+            self.launch.setEnabled(False)
+            self.advanced.setStyleSheet("color: rgb(84, 82, 82);background-color: rgb(37, 27, 45);") # grey
+            self.advanced.setEnabled(False)
             app.processEvents()
-            game_path = Path(self.lineEdit.text())
-            url = self.lineEdit_2.text()
+            game_path = Path(self.gamedirbox.text())
+            url = self.downloadurlbox.text()
             response = httpx.get(url, headers={'user-agent': user_agent}, follow_redirects=True)
             resUrl = response.url
             url = "https://" + resUrl.host + "/toast/"
@@ -187,25 +420,21 @@ class Ui_MainWindow(object):
                 errorMsg.setText(
                     "Something's gone wrong! Post the following error in the troubleshooting channel: " + error_message)
                 errorMsg.exec_()
-                self.label_status.setText('Waiting to Download')
-                self.pushButton.setDisabled(False)
-                self.pushButton_2.setDisabled(False)
-                self.pushButton_3.setDisabled(False)
+                existing_game_check(self, MainWindow)
                 return
             print(version)
             if latest_ver != version and self.verWarned == False:
                 self.verWarned = True
                 errorMsg = QMessageBox()
-                errorMsg.setWindowTitle("out of date!")
+                errorMsg.setWindowTitle("Launcher Out Of Date!")
                 errorMsg.setText(
-                    "This isn't the latest version! you need to download the latest version from the website.\nlatest "
+                    "This isn't the latest version of the launcher! Please ensure you update here: https://toast.openfortress.fun/toast/ \nlatest "
                     "version: " + latest_ver)
                 errorMsg.exec_()
             revisions = fetch_revisions(url, installed_revision, latest_revision)
             changes = replay_changes(revisions)
             writes = list(filter(lambda x: x["type"] == TYPE_WRITE, changes))
-            client = httpx.Client(headers={'user-agent': user_agent, 'Connection': 'keep-alive', 'Cache-Control': 'max-age=0'}, http2=True)
-            todl = [[url + "objects/" + x["object"], game_path / x["path"], x["hash"], client] for x in writes]
+            todl = [[url + "objects/" + x["object"], game_path / x["path"], x["hash"]] for x in writes]
             try:
                 os.remove(game_path / ".revision")
             except FileNotFoundError:
@@ -222,64 +451,120 @@ class Ui_MainWindow(object):
                     os.mkdir(game_path / x["path"], 0o777)
                 except FileExistsError:
                     pass
-            #self.pushButton.setText('Downloading...')
-            pbar_sg(todl, self, app, num_threads)
+            # self.pushButton.setText('Downloading...')
+            errs = ariabar(todl, self, app, num_threads)
             (game_path / ".revision").touch(0o777)
             (game_path / ".revision").write_text(str(latest_revision))
-            #now verify just in case
+            if errs != []:
+
+                error_message = '\n'.join(errs)
+                errorMsg = QMessageBox()
+                errorMsg.setWindowTitle("Toast Meditation")
+                errorMsg.setText(
+                    "Something's gone wrong with the downloading! Post the following error(s) in the troubleshooting "
+                    "channel: " + error_message)
+                errorMsg.exec_()
+                exit(1)
+            # now verify just in case
             self.clickVerify()
-            exitMsg = QMessageBox()
-            exitMsg.setWindowTitle("OFToast")
-            exitMsg.setText("Done!")
-            exitMsg.exec_()
-            self.label_status.setText('Waiting to Download')
-            self.pushButton.setDisabled(False)
-            self.pushButton_2.setDisabled(False)
-            self.pushButton_3.setDisabled(False)
+            self.progressBarTextUnder.setVisible(False)
+            existing_game_check(self, MainWindow)
             return
         except TimeoutError or httpx.RequestError or ConnectionResetError or httpx.ReadTimeout:
             errorMsg = QMessageBox()
-            errorMsg.setWindowTitle("rei?")
+
+            errorMsg.setWindowTitle("hmm... raspberry.")
             errorMsg.setText("The server you've connected to is down! Try again later.")
             errorMsg.exec_()
+            existing_game_check(self, MainWindow)
         except TimeoutError or httpx.RequestError or ConnectionResetError:
             errorMsg = QMessageBox()
-            errorMsg.setWindowTitle("rei?")
+            errorMsg.setWindowTitle("hmm... raspberry.")
+
             errorMsg.setText("The server you've connected to is down! Try again later.")
             errorMsg.exec_()
+            existing_game_check(self, MainWindow)
         except Exception as e:
             error_message = traceback.format_exc()
             if 'timeout' or 'reset' in error_message:
                 errorMsg = QMessageBox()
-                errorMsg.setWindowTitle("rei?")
+                errorMsg.setWindowTitle("I actually prefer marmalade.")
                 errorMsg.setText("The server you've connected to is down! Try again later.")
                 errorMsg.exec_()
             errorMsg = QMessageBox()
-            errorMsg.setWindowTitle("rei?")
+            errorMsg.setWindowTitle("Uh oh.")
             errorMsg.setText(
-                "Something's gone wrong! Post the following error in the troubleshooting channel: " + error_message)
+                "Something's gone catastrophically wrong! Post the following error in the troubleshooting channel: " + error_message)
             errorMsg.exec_()
-            self.label_status.setText('Waiting to Download')
-            self.pushButton.setDisabled(False)
-            self.pushButton_2.setDisabled(False)
-            self.pushButton_3.setDisabled(False)
+            existing_game_check(self, MainWindow)
 
-    def clickCancel(self):
-        exit(1)
+    def clickAdvanced(self):
+        p = os.path.join(os.path.expanduser('~'), ".oftoast")
+        if os.path.exists("{}/launchoptions.txt".format(p)):
+            f = open("{}/launchoptions.txt".format(p), 'r')
+            self.launchoptionsbox.setText(f.read())
+            f.close()
+            advWindow.setVisible(True)
+            advWindow.setEnabled(True)
+            self.buttonBox.clicked.connect(self.advClose)
+        else:
+            if not os.path.exists(p):
+                os.makedirs(p)
+            f = open("{}/launchoptions.txt".format(p), 'w')
+            f.write(self.launchoptionsbox.text())
+            f.close()
+            advWindow.setVisible(True)
+            advWindow.setEnabled(True)
+            self.buttonBox.clicked.connect(self.advClose)
 
     
+    def advClose(self):
+        p = os.path.join(os.path.expanduser('~'), ".oftoast")
+        f = open("{}/launchoptions.txt".format(p), 'w')
+        f.write(str(self.launchoptionsbox.text()))
+        f.close()
+        self.launchoptionsbox.setText(str(self.launchoptionsbox.text()))
+        self.gamedirbox.setText(str(self.gamedirbox.text()))
+        self.downloadurl.setText(str(self.downloadurl.text()))
+        advWindow.setEnabled(False)
+        advWindow.hide()
+
+
+    def clickMute(self):
+        if not self.muted:
+            self.muted = True
+            self.mute.setIcon(self.muteico)
+            if pygame.mixer.Channel(0).get_busy():
+                self.stop(0)
+        else:
+            self.muted = False
+            self.mute.setIcon(self.upico)
+            if not pygame.mixer.Channel(0).get_busy() and (self.downloading == True):
+                self.play(ResolvePath("toast.wav"), 0)
+
+
     def clickVerify(self):
+        #self.label.setMovie(self.movie)
+        #self.movie.start()
+        self.play(ResolvePath("start.wav"),1)
         global version
         try:
-            #self.pushButton_3.setText('Verifying...')
-            self.label_status.setText('Verifying...')
-            self.pushButton.setDisabled(True)
-            self.pushButton_2.setDisabled(True)
-            self.pushButton_3.setDisabled(True)
+            self.progressBarText.setText('Verifying...')
+            self.progressBarTextUnder.setVisible(False)
+            self.progressBar.setVisible(True)
+            self.progressBarText.setVisible(True)
+            self.installed.setVisible(False)
+            self.latest.setVisible(False)
+            self.verify.setStyleSheet("color: rgb(84, 82, 82);background-color: rgb(37, 27, 45);") # grey
+            self.verify.setEnabled(False)
+            self.launch.setStyleSheet("color: rgb(84, 82, 82);background-color: rgb(37, 27, 45);") # grey
+            self.launch.setEnabled(False)
+            self.advanced.setStyleSheet("color: rgb(84, 82, 82);background-color: rgb(37, 27, 45);") # grey
+            self.advanced.setEnabled(False)
             app.processEvents()
-            game_path = Path(self.lineEdit.text())
-            url = self.lineEdit_2.text()
-            response = httpx.get(url, headers={'user-agent': user_agent},follow_redirects=True)
+            game_path = Path(self.gamedirbox.text())
+            url = self.downloadurlbox.text()
+            response = httpx.get(url, headers={'user-agent': user_agent}, follow_redirects=True)
             resUrl = response.url
             url = "https://" + resUrl.host + "/toast/"
             print("Server Selected: " + url)
@@ -288,7 +573,7 @@ class Ui_MainWindow(object):
                     Path.mkdir(game_path / Path('open_fortress'))
                 except FileExistsError:
                     pass
-            installed_revision = -1 # = get_installed_revision(game_path)
+            installed_revision = -1  # = get_installed_revision(game_path)
             try:
                 num_threads = get_threads(url)
                 latest_ver = get_latest_ver(url)
@@ -299,10 +584,7 @@ class Ui_MainWindow(object):
                 errorMsg.setText("Invalid URL!")
                 errorMsg.exec_()
                 #exit(1)
-                self.label_status.setText('Waiting to Download')
-                self.pushButton.setDisabled(False)
-                self.pushButton_2.setDisabled(False)
-                self.pushButton_3.setDisabled(False)
+                existing_game_check(self, MainWindow)
                 return
             print(version)
             if latest_ver != version and self.verWarned == False:
@@ -310,14 +592,14 @@ class Ui_MainWindow(object):
                 errorMsg = QMessageBox()
                 errorMsg.setWindowTitle("out of date!")
                 errorMsg.setText(
-                    "This isn't the latest version! you need to download the latest version from the website.\nlatest "
+                    "This isn't the latest version of the launcher! Please ensure you update here: https://toast.openfortress.fun/toast/ \nlatest "
                     "version: " + latest_ver)
                 errorMsg.exec_()
+            app.processEvents()
             revisions = fetch_revisions(url, installed_revision, latest_revision)
             changes = replay_changes(revisions)
             writes = list(filter(lambda x: x["type"] == TYPE_WRITE, changes))
-            client = httpx.Client(headers={'user-agent': user_agent, 'Connection': 'keep-alive', 'Cache-Control': 'max-age=0'}, http2=True)
-            todl = [[url + "objects/" + x["object"], game_path / x["path"], x["hash"], client] for x in writes]
+            todl = [[url + "objects/" + x["object"], game_path / x["path"], x["hash"]] for x in writes]
             try:
                 os.remove(game_path / ".revision")
             except FileNotFoundError:
@@ -334,30 +616,36 @@ class Ui_MainWindow(object):
                     os.mkdir(game_path / x["path"], 0o777)
                 except FileExistsError:
                     pass
-            #self.pushButton_3.setText('Verifying...')
-            pbar_sg_verif(todl, self, app, num_threads)
+            # self.pushButton_3.setText('Verifying...')
+            self.play(ResolvePath("toast.wav"),0)
+            self.downloading = True
+            pbar_qt_verif(todl, self, app, num_threads)
             (game_path / ".revision").touch(0o777)
             (game_path / ".revision").write_text(str(latest_revision))
+            self.stop(0)
+            #self.movie.stop()
             exitMsg = QMessageBox()
             exitMsg.setWindowTitle("OFToast")
             exitMsg.setText("Done!")
+            self.play(ResolvePath("done.wav"),1)
+            self.downloading = False
             exitMsg.exec_()
             #exit(1)
-            self.label_status.setText('Waiting to Download')
-            self.pushButton.setDisabled(False)
-            self.pushButton_2.setDisabled(False)
-            self.pushButton_3.setDisabled(False)
+            existing_game_check(self, MainWindow)
+            self.progressBar.setValue(0)
             return
         except TimeoutError or httpx.RequestError or ConnectionResetError or httpx.ReadTimeout:
             errorMsg = QMessageBox()
             errorMsg.setWindowTitle("rei?")
             errorMsg.setText("The server you've connected to is down! Try again later.")
             errorMsg.exec_()
+            existing_game_check(self, MainWindow)
         except TimeoutError or httpx.RequestError or ConnectionResetError:
             errorMsg = QMessageBox()
             errorMsg.setWindowTitle("rei?")
             errorMsg.setText("The server you've connected to is down! Try again later.")
             errorMsg.exec_()
+            existing_game_check(self, MainWindow)
         except Exception as e:
             error_message = traceback.format_exc()
             if 'timeout' or 'reset' in error_message:
@@ -371,23 +659,19 @@ class Ui_MainWindow(object):
                 "Something's gone wrong! Post the following error in the troubleshooting channel: " + error_message)
             errorMsg.exec_()
             #exit(1)
-            self.label_status.setText('Waiting to Download')
-            self.pushButton.setDisabled(False)
-            self.pushButton_2.setDisabled(False)
-            self.pushButton_3.setDisabled(False)
+            existing_game_check(self, MainWindow)
             return
-            
+
     def clickLaunch(self):
-        self.label_status.setText('Launching...')
-        game_path = Path(self.lineEdit.text())
+        #self.label_status.setText('Launching...')
+        game_path = Path(self.gamedirbox.text())
         installed = os.path.isfile((game_path/Path('.revision')))
         if not installed:
             errorMsg = QMessageBox()
             errorMsg.setWindowTitle("rei?")
-            errorMsg.setText("You dont seem to have Open Fortress installed! Click the 'Update' button to install.")
+            errorMsg.setText("You dont seem to have Open Fortress installed! Click the 'Install' button to install.")
             errorMsg.exec_()
-            self.pushButton_4.setText('Launch')
-            self.label_status.setText('Waiting to Download')
+            existing_game_check(self, MainWindow)
             return
 
         if game_path != -1:
@@ -399,67 +683,65 @@ class Ui_MainWindow(object):
                     #print(library_folders[x]['path'])
                     sdkPath = (library_folders[x]['path'] / Path('steamapps') / Path('common') / Path('Source SDK Base 2013 Multiplayer'))
                     if os.path.isdir((sdkPath / Path('bin'))):
-                    	sdkExists = True
+                        sdkExists = True
             for x in library_folders:
                 if ('440' in library_folders[x]['apps'].keys()):
                     #print(library_folders[x]['path'])
                     tf2Path = (library_folders[x]['path'] / Path('steamapps') / Path('common') / Path('Team Fortress 2'))
                     if os.path.isdir((tf2Path / Path('bin'))):
-                    	tf2Exists = True                    	
+                        tf2Exists = True
 
-                    	
+
             if sdkExists == False and tf2Exists == False:
                 errorMsg = QMessageBox()
                 errorMsg.setWindowTitle("rei?")
-                errorMsg.setText("You dont seem to have the Source Sdk 2013 Base Multiplayer or Team Fortress 2 installed!" + 
+                errorMsg.setText("You dont seem to have the Source Sdk 2013 Base Multiplayer or Team Fortress 2 installed!" +
                 "They are a requirement to play Open Fortress.")
                 errorMsg.exec_()
-                self.label_status.setText('Waiting to Download')
+                existing_game_check(self, MainWindow)
                 return
-                
+
             if sdkExists == False:
                 errorMsg = QMessageBox()
                 errorMsg.setWindowTitle("rei?")
                 errorMsg.setText("You dont seem to have the Source Sdk 2013 Base Multiplayer installed! It is a requirement to play Open Fortress.")
                 errorMsg.exec_()
-                self.label_status.setText('Waiting to Download')
+                existing_game_check(self, MainWindow)
                 return
-                
+
             if tf2Exists == False:
                 errorMsg = QMessageBox()
                 errorMsg.setWindowTitle("rei?")
                 errorMsg.setText("You dont seem to have Team Fortress 2 installed! It is a requirement to play Open Fortress.")
                 errorMsg.exec_()
-                self.label_status.setText('Waiting to Download')
+                existing_game_check(self, MainWindow)
                 return
-                
+
 
         else:
             errorMsg = QMessageBox()
             errorMsg.setWindowTitle("rei?")
             errorMsg.setText("You dont seem to have Open Fortress installed! Click the 'Install' button to install.")
             errorMsg.exec_()
-            self.label_status.setText('Waiting to Download')
+            existing_game_check(self, MainWindow)
             return
-        
+        app.processEvents()
+        sdk = str(sdkPath)
+        game = str(game_path)
         if platform.startswith('win32'):
-            #hl2 = "{sdk}\hl2.exe".format(sdk = sdkPath)
-            #run([hl2, "-game", ofpath], shell=True)
-            run(["start", "steam://rungameid/11677091221058336806"], shell=True)
+            run("start /d \"{}\" hl2.exe -game \"{}\" -secure -steam {}".format(sdk,game,self.launchoptionsbox.text()), shell=True)
         else:
             #hl2 = "{sdk}\hl2_linux".format(sdk = sdkPath)
             #run([hl2, "-game", ofpath])
-            run(["xdg-open","steam://rungameid/11677091221058336806"])
-        time.sleep(5)
-        self.label_status.setText('Waiting to Download')
-
+            Popen("\"{}/hl2.sh\" -game {} -secure -steam {}".format(sdk,game,self.launchoptionsbox.text()), shell=True)
+        existing_game_check(self, MainWindow)
 
     def downloadWarning(self):
-        if self.wasWarned==False:
-            self.wasWarned=True
+        if self.wasWarned == False:
+            self.wasWarned = True
             warnMsg = QMessageBox()
             warnMsg.setWindowTitle("Warning")
-            warnMsg.setText("Changing the Download URL is not advised. Only change it if you know what you're doing.")
+            warnMsg.setText("Changing any of these input boxes is not advised. Only change it if you know what you're doing.")
             warnMsg.exec_()
 
 
@@ -473,39 +755,27 @@ def get_latest_ver(url):
     r = httpx.get(url + "/reiversion", headers={'user-agent': user_agent}, follow_redirects=True)
     return r.text.strip()
 
+def work(arr,verif = False):
+    certs = ResolvePath("ca-certificates.crt")
+    if sys.platform.startswith('win32'):
+        ariapath = ResolvePath("aria2c.exe")
+        cmd = '{} {} -o \"{}\" --checksum=md5={} --ca-certificate={} -d C: -j 100 -m 10 -V -U {}/{}'.format(ariapath,arr[0],str(arr[1])[3:],arr[2],certs,user_agent,version)
 
-def work(arr):
-    try:
-        exists = False
-        while exists == False:
-            wasProblematic = False
-            goodDownload = False
-            hasher = hashlib.md5()
-            while goodDownload == False:
-                resp = arr[3].get(arr[0])
-                hasher.update(resp.content)
-                hodl = hasher.hexdigest()
-                #print("Hash of file:", hodl)
-                #print("Compared to stored hash of:", arr[2])
-                if hodl == arr[2]:
-                    goodDownload = True
-                else:
-                    if wasProblematic == False:
-                        print("Hash failed for file", arr[1], "Retrying...")
-                    wasProblematic = True
-                    hasher = hashlib.md5() #reset hasher
-                    goodDownload = False
-            if wasProblematic:
-                print(arr[1], "was able to finish downloading!")
-            file = open(arr[1], "wb+")
-            file.write(resp.content)
-            file.close()
-            if arr[1].exists():
-                exists = True
-            else:
-                print("file hasn't downloaded...")
-    except:
-        work(arr) #hate this workaround
+    else:
+        ariapath = ResolvePath("./aria2c")
+        cmd = '{} {} -o \"{}\" --checksum=md5={} --ca-certificate={} -d / -j 100 -m 10 -V -U {}/{}'.format(ariapath,arr[0],arr[1],arr[2],certs,user_agent,version)
+    done = False
+    if (verif):
+        cmd = cmd + " --auto-file-renaming=False --allow-overwrite=true"
+    while not done:
+        fp = Popen(cmd, shell=True, stdout=PIPE)
+        fp.wait()
+        content = [x.decode(encoding="utf-8", errors="ignore") for x in fp.stdout]
+        if 'OK' in content[-1]:
+            done = True
+        else:
+            print(content)
+
 
 def work_verif(arr):
     try:
@@ -517,11 +787,11 @@ def work_verif(arr):
             hasher.update(fcontents)
             hodl = hasher.hexdigest()
             if hodl == arr[2]:
-                #good :)
+                # good :)
                 pass
             else:
                 print(arr[1], "failed verification, redownloading...")
-                work(arr)
+                work(arr,True)
         else:
             print(arr[1], "not found, redownloading...")
             work(arr)
@@ -529,18 +799,53 @@ def work_verif(arr):
         work_verif(arr)
 
 
-def pbar_sg(iter, self, app, num_cpus=16):
-    length = len(iter)
+def ariabar(arr, self, app, num_cpus=16):
+    todl = ResolvePath("todl.txt")
+    certs = ResolvePath("ca-certificates.crt")
+    x = open(todl, 'w')
+    totalfileCount = 0
+    for a in arr:
+        if sys.platform.startswith('win32'):
+            x.write('{}\n out={}\n checksum=md5={}\n'.format(a[0],str(arr[1])[3:], a[2]))
+        else:
+            x.write('{}\n out={}\n checksum=md5={}\n'.format(a[0],a[1], a[2]))
+        totalfileCount = totalfileCount + 1
+    x.close()
+    length = len(arr)
     z = 0
-    executor = ThreadPoolExecutor(num_cpus)
-    futures = {executor.submit(work, x): x for x in iter}
-    for _ in as_completed(futures):
-        z = z + 1
-        self.progressBar.setValue(z)
-        self.progressBar.setMaximum(length)
-        app.processEvents()
+    if sys.platform.startswith('win32'):
+        ariapath = ResolvePath("aria2c.exe")
+        drive = arr[0][1][:3]
+        fp = Popen('{} --ca-certificate={} -i {} -d {} -x {} -j 100 -m 10 -V -U {}/{}'.format(ariapath,certs,todl,drive,num_cpus,user_agent,version), shell=True,
+                   stdin=PIPE, stdout=PIPE, universal_newlines=True)
+    else:
+        ariapath = ResolvePath("./aria2c")
+        fp = Popen('{} --ca-certificate={} -i {} -d / -x {} -j 100 -m 10 -V -U {}/{}'.format(ariapath,certs,todl,num_cpus,user_agent,version), shell=True,stdin=PIPE, stdout=PIPE, universal_newlines=True)
+    done = False
+    errs = []
+    while not done:
+        for l in fp.stdout:
+            print(l)
+            app.processEvents()
+            if 'Verification finished successfully.' in l:
+                z = z + 1
+                self.progressBar.setValue(z)
+                self.progressBar.setMaximum(length)
+                fileName = l.split("sourcemods/")[1]
+                self.progressBarTextUnder.setText("{} {}/{}".format(fileName,z,totalfileCount))
+                if not self.muted:
+                    if not pygame.mixer.Channel(0).get_busy():
+                        self.play(ResolvePath("toast.wav"), 0)
+                app.processEvents()
+            if "(OK):download completed" or '(ERR):error occurred' in l:
+                done = True
+            if "Exception" in  l:
+                  errs.append(l)
+            if "503" in l:
+                done = True
+    return errs
 
-def pbar_sg_verif(iter, self, app, num_cpus=16):
+def pbar_qt_verif(iter, self, app, num_cpus=16):
     length = len(iter)
     z = 0
     executor = ThreadPoolExecutor(num_cpus)
@@ -556,34 +861,75 @@ def get_revision(url: str, revision: int):
     r = httpx.get(url + "/" + str(revision), headers={'user-agent': user_agent}, follow_redirects=True)
     return json.loads(r.text)
 
-def fetch_latest_revision(url):
-	#r = urllib.request.urlopen()
-	r = httpx.get(url + "revisions/latest", headers={'user-agent': user_agent}, follow_redirects=True)
-	return int(r.text)
 
-def fetch_revisions(url,first,last):
-	revisions = []
-	for x in range(first+1, last+1):
-		if not (x < 0):
-			#r = urllib.request.urlopen(url + "revisions/" + str(x))
-			r = httpx.get(url + "revisions/" + str(x), headers={'user-agent': user_agent}, follow_redirects=True)
-			revisions.append(json.loads(r.text))
-	return revisions
+def fetch_latest_revision(url):
+    # r = urllib.request.urlopen()
+    r = httpx.get(url + "revisions/latest", headers={'user-agent': user_agent}, follow_redirects=True)
+    return int(r.text)
+
+
+def fetch_revisions(url, first, last):
+    revisions = []
+    for x in range(first + 1, last + 1):
+        if not (x < 0):
+            # r = urllib.request.urlopen(url + "revisions/" + str(x))
+            r = httpx.get(url + "revisions/" + str(x), headers={'user-agent': user_agent}, follow_redirects=True)
+            revisions.append(json.loads(r.text))
+    return revisions
+
 
 def existing_game_check(ui, MainWindow):
     ofpath = getpath()
+    ui.launch.setEnabled(True)
+    ui.launch.setStyleSheet("color: rgb(238, 225, 207);")
+    ui.verify.setEnabled(True)
+    ui.verify.setStyleSheet("color: rgb(238, 225, 207);")
+    ui.advanced.setEnabled(True)
+    ui.advanced.setStyleSheet("color: rgb(238, 225, 207);")
+    ui.progressBar.setVisible(False)
+    ui.progressBarText.setVisible(False)
+    ui.progressBarTextUnder.setVisible(False)
+    ui.latest.setVisible(True)
+    ui.installed.setGeometry(QtCore.QRect(140, 290, 480, 50))
+    ui.installed.setVisible(True)
     if ofpath != -1:
         sdk_download(ofpath.parents[1])
         revision = get_installed_revision(ofpath)
-        if revision >= 0:
-            _translate = QtCore.QCoreApplication.translate
-            ui.label_3.setText("Installed Revision: " + str(revision))
-            ui.pushButton.setText(_translate("MainWindow", "Update"))
-            
-        ui.lineEdit.setText(str(ofpath))
+        latest = fetch_latest_revision(default_url)
+        if revision > 0:
+            ui.installed.setText("Current Game Version: " + str(revision))
+            ui.latest.setText("Latest Game Version: " + str(latest))
+            if revision < latest:
+                ui.launch.setText("Update")
+                clickable(ui.launch).connect(ui.clickUpdate)
+                ui.verify.setStyleSheet("color: rgb(84, 82, 82);background-color: rgb(37, 27, 45);") # grey
+                ui.verify.setEnabled(False)
+            #elif revision > latest:
+            #    ui.launch.setText("Update")
+            #    clickable(ui.launch).connect(ui.clickUpdate)
+            #    ui.verify.setStyleSheet("color: rgb(84, 82, 82);background-color: rgb(37, 27, 45);") # grey
+            #    ui.launch.setStyleSheet("color: rgb(84, 82, 82);background-color: rgb(37, 27, 45);") # grey
+            #    ui.verify.setEnabled(False)
+            #    ui.secret.setVisible(True)
+            #    ui.secretText.setVisible(True)
+            else:
+                ui.launch.setText("Launch")
+                clickable(ui.launch).connect(ui.clickLaunch)
+                ui.verify.setStyleSheet("color: rgb(238, 225, 207);")
+                ui.verify.setEnabled(True)
+        else:
+            ui.installed.setGeometry(QtCore.QRect(140, 290, 480, 50))
+            ui.installed.setText("Click Install now!")
+            ui.latest.setVisible(False)
+            ui.verify.setStyleSheet("color: rgb(84, 82, 82);background-color: rgb(37, 27, 45);") # grey
+            ui.verify.setEnabled(False)
+            ui.launch.setText("Install")
+            clickable(ui.launch).connect(ui.clickUpdate)
+
+    ui.gamedirbox.setText(str(ofpath))
 
 
-def set_theme(app, MainWindow):
+def set_theme(app, MainWindow, advWindow):
     QApplication.setStyle("fusion")
     palette = QPalette()
     palette.setColor(QPalette.Window, QColor('#584169'))
@@ -603,11 +949,14 @@ def set_theme(app, MainWindow):
 
 
 if __name__ == "__main__":
+    QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
+    QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()
+    advWindow = QtWidgets.QWidget()
     ui = Ui_MainWindow()
-    set_theme(app, MainWindow)
-    ui.setupUi(app, MainWindow)
+    set_theme(app, MainWindow,advWindow)
+    ui.setupUi(app, MainWindow, advWindow)
     existing_game_check(ui, MainWindow)
     MainWindow.show()
 
