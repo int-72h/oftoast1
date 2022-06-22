@@ -8,3 +8,4 @@ PyQt5~=5.15.6
 httpx[http2]~=0.23.0
 future~=0.18.2
 pygame~=2.1.2
+pycurl~=7.45.1

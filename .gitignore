@@ -1,6 +1,5 @@
 build
-oflauncher_rei.egg-info
-ofrei/__pycache__
-ofrei/dist/gui.exe
-ofrei/gui.py.bak
-ofrei/gui.spec
+*.egg-info
+ofjam/__pycache__
+ofjam/dist/
+ofjam/gui.spec

@@ -5,10 +5,12 @@ import argparse
 import os
 from subprocess import Popen,PIPE
 
-
 from pathlib import Path
 from sys import exit, stderr
 import httpx
+
+import pycurl
+import certifi
 
 parser = argparse.ArgumentParser(description="Manage Open Fortress installation.")
 parser.add_argument("action", type=str, help='action to execute on a directory, currently only "upgrade"')
@@ -44,12 +46,6 @@ changes = replay_changes(revisions)
 
 writes = list(filter(lambda x: x["type"] == TYPE_WRITE, changes))
 
-
-try:
-    os.remove(game_path / ".revision")
-except FileNotFoundError:
-    pass
-
 for x in list(filter(lambda x: x["type"] == TYPE_DELETE, changes)):
     print("DEL", x["path"])
     try:
@@ -64,14 +60,30 @@ for x in list(filter(lambda x: x["type"] == TYPE_MKDIR, changes)):
     except FileNotFoundError:
         pass
     os.makedirs(game_path / x["path"], mode=0o777, exist_ok=True)
-todl = open('todl.txt','w')
-for x in writes:
     if x["type"] == TYPE_WRITE:
-        todl.write('{}\n out={}\n checksum=md5={}\n'.format(url+"objects/"+x["object"], game_path / str(x["path"]), x["hash"]))
-todl.close()
-fp = Popen('aria2c -i todl.txt -d . -x 12 -j 100 -m 10 -V -U murse/0.0.2', shell=True,stdin=PIPE, stdout=PIPE, universal_newlines=True)
+        file_url = url+"objects/"+x["object"]
+        file_path = game_path / str(x["path"])
+        file_expected_hash = x["hash"]
+
+        try:
+            with fopen(file_path, "rb") as fd:
+                if file_expected_hash == hashlib.md5(fd.read()).hexdigest():
+                    continue
+        except FileNotFoundError:
+            pass
+
+        file = fopen(file_path, "wb")
+        c = pycurl.Curl()
+        c.setopt(c.URL, file_url)
+        c.setopt(c.WRITEDATA, file)
+        c.setopt(c.CAINFO, certifi.where())
+        c.setopt(c.USERAGENT, "{}/{}".format(user_agent,version))
+        c.perform()
+        c.close()
+        file.close()
+
 for line in fp.stdout:
     print(line)
 
-(game_path / ".revision").touch(0o777)
+(game_path / ".revision").touch(0o644)
 (game_path / ".revision").write_text(str(latest_revision))

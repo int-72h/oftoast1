@@ -15,6 +15,9 @@ from PyQt5.QtWidgets import QApplication, QMessageBox, QInputDialog
 from PyQt5.QtGui import QPalette, QColor, QFont, QFontDatabase,QMovie
 import sys
 
+import pycurl
+import certifi
+
 global version
 version = '0.3.1'
 user_agent = 'toast_ua'
@@ -435,10 +438,6 @@ class Ui_MainWindow(object):
             changes = replay_changes(revisions)
             writes = list(filter(lambda x: x["type"] == TYPE_WRITE, changes))
             todl = [[url + "objects/" + x["object"], game_path / x["path"], x["hash"]] for x in writes]
-            try:
-                os.remove(game_path / ".revision")
-            except FileNotFoundError:
-                pass
 
             for x in list(filter(lambda x: x["type"] == TYPE_DELETE, changes)):
                 try:
@@ -448,12 +447,12 @@ class Ui_MainWindow(object):
 
             for x in list(filter(lambda x: x["type"] == TYPE_MKDIR, changes)):
                 try:
-                    os.mkdir(game_path / x["path"], 0o777)
+                    os.mkdir(game_path / x["path"], 0o755)
                 except FileExistsError:
                     pass
             # self.pushButton.setText('Downloading...')
-            errs = ariabar(todl, self, app, num_threads)
-            (game_path / ".revision").touch(0o777)
+            errs = pbar_qt(todl, self, app, num_threads)
+            (game_path / ".revision").touch(0o644)
             (game_path / ".revision").write_text(str(latest_revision))
             if errs != []:
 
@@ -600,10 +599,6 @@ class Ui_MainWindow(object):
             changes = replay_changes(revisions)
             writes = list(filter(lambda x: x["type"] == TYPE_WRITE, changes))
             todl = [[url + "objects/" + x["object"], game_path / x["path"], x["hash"]] for x in writes]
-            try:
-                os.remove(game_path / ".revision")
-            except FileNotFoundError:
-                pass
 
             for x in list(filter(lambda x: x["type"] == TYPE_DELETE, changes)):
                 try:
@@ -756,94 +751,48 @@ def get_latest_ver(url):
     return r.text.strip()
 
 def work(arr,verif = False):
-    certs = ResolvePath("ca-certificates.crt")
-    if sys.platform.startswith('win32'):
-        ariapath = ResolvePath("aria2c.exe")
-        cmd = '{} {} -o \"{}\" --checksum=md5={} --ca-certificate={} -d C: -j 100 -m 10 -V -U {}/{}'.format(ariapath,arr[0],str(arr[1])[3:],arr[2],certs,user_agent,version)
+    try:
+        with open(arr[1], "rb") as fd:
+            fd_hash = hashlib.md5(fd.read()).hexdigest()
+            if arr[2] == fd_hash:
+                return
+    except FileNotFoundError:
+        pass
 
-    else:
-        ariapath = ResolvePath("./aria2c")
-        cmd = '{} {} -o \"{}\" --checksum=md5={} --ca-certificate={} -d / -j 100 -m 10 -V -U {}/{}'.format(ariapath,arr[0],arr[1],arr[2],certs,user_agent,version)
-    done = False
-    if (verif):
-        cmd = cmd + " --auto-file-renaming=False --allow-overwrite=true"
-    while not done:
-        fp = Popen(cmd, shell=True, stdout=PIPE)
-        fp.wait()
-        content = [x.decode(encoding="utf-8", errors="ignore") for x in fp.stdout]
-        if 'OK' in content[-1]:
-            done = True
-        else:
-            print(content)
-
+    file = open(arr[1], "wb")
+    c = pycurl.Curl()
+    c.setopt(c.URL, arr[0])
+    c.setopt(c.WRITEDATA, file)
+    c.setopt(c.CAINFO, certifi.where())
+    c.setopt(c.USERAGENT, "{}/{}".format(user_agent,version))
+    c.perform()
+    c.close()
+    file.close()
 
 def work_verif(arr):
     try:
-        if arr[1].exists():
-            f = open(arr[1], "rb")
-            fcontents = f.read()
-            f.close()
-            hasher = hashlib.md5()
-            hasher.update(fcontents)
-            hodl = hasher.hexdigest()
-            if hodl == arr[2]:
-                # good :)
-                pass
-            else:
-                print(arr[1], "failed verification, redownloading...")
-                work(arr,True)
-        else:
-            print(arr[1], "not found, redownloading...")
-            work(arr)
-    except:
-        work_verif(arr)
+        with open(arr[1], "rb") as fd:
+            fd_hash = hashlib.md5(fd.read()).hexdigest()
+            if arr[2] == fd_hash:
+                return
+    except FileNotFoundError:
+        pass
+
+    work(arr)
 
 
-def ariabar(arr, self, app, num_cpus=16):
-    todl = ResolvePath("todl.txt")
-    certs = ResolvePath("ca-certificates.crt")
-    x = open(todl, 'w')
-    totalfileCount = 0
-    for a in arr:
-        if sys.platform.startswith('win32'):
-            x.write('{}\n out={}\n checksum=md5={}\n'.format(a[0],str(arr[1])[3:], a[2]))
-        else:
-            x.write('{}\n out={}\n checksum=md5={}\n'.format(a[0],a[1], a[2]))
-        totalfileCount = totalfileCount + 1
-    x.close()
-    length = len(arr)
+def pbar_qt(iter, self, app, num_cpus=16):
+    length = len(iter)
     z = 0
-    if sys.platform.startswith('win32'):
-        ariapath = ResolvePath("aria2c.exe")
-        drive = arr[0][1][:3]
-        fp = Popen('{} --ca-certificate={} -i {} -d {} -x {} -j 100 -m 10 -V -U {}/{}'.format(ariapath,certs,todl,drive,num_cpus,user_agent,version), shell=True,
-                   stdin=PIPE, stdout=PIPE, universal_newlines=True)
-    else:
-        ariapath = ResolvePath("./aria2c")
-        fp = Popen('{} --ca-certificate={} -i {} -d / -x {} -j 100 -m 10 -V -U {}/{}'.format(ariapath,certs,todl,num_cpus,user_agent,version), shell=True,stdin=PIPE, stdout=PIPE, universal_newlines=True)
-    done = False
-    errs = []
-    while not done:
-        for l in fp.stdout:
-            print(l)
-            app.processEvents()
-            if 'Verification finished successfully.' in l:
-                z = z + 1
-                self.progressBar.setValue(z)
-                self.progressBar.setMaximum(length)
-                fileName = l.split("sourcemods/")[1]
-                self.progressBarTextUnder.setText("{} {}/{}".format(fileName,z,totalfileCount))
-                if not self.muted:
-                    if not pygame.mixer.Channel(0).get_busy():
-                        self.play(ResolvePath("toast.wav"), 0)
-                app.processEvents()
-            if "(OK):download completed" or '(ERR):error occurred' in l:
-                done = True
-            if "Exception" in  l:
-                  errs.append(l)
-            if "503" in l:
-                done = True
-    return errs
+    executor = ThreadPoolExecutor(num_cpus)
+    futures = {executor.submit(work, x): x for x in iter}
+    for _ in as_completed(futures):
+        z = z + 1
+        self.progressBar.setValue(z)
+        self.progressBar.setMaximum(length)
+        app.processEvents()
+
+    return []
 
 def pbar_qt_verif(iter, self, app, num_cpus=16):
     length = len(iter)
