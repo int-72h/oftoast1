@@ -713,26 +713,23 @@ class Ui_MainWindow(object):
                 errorMsg = QMessageBox()
                 errorMsg.setWindowTitle("rei?")
                 errorMsg.setText("You dont seem to have the Source Sdk 2013 Base Multiplayer or Team Fortress 2 installed!" +
-                "They are a requirement to play Open Fortress.")
+                "They are a requirement to play Open Fortress.\nHowever, you may continue if you think you've definitely have both installed.")
                 errorMsg.exec_()
                 existing_game_check(self, MainWindow)
-                return
 
             if sdkExists == False:
                 errorMsg = QMessageBox()
                 errorMsg.setWindowTitle("rei?")
-                errorMsg.setText("You dont seem to have the Source Sdk 2013 Base Multiplayer installed! It is a requirement to play Open Fortress.")
+                errorMsg.setText("You dont seem to have the Source Sdk 2013 Base Multiplayer installed! It is a requirement to play Open Fortress.\nHowever, you may continue if you think you've definitely have it installed.")
                 errorMsg.exec_()
                 existing_game_check(self, MainWindow)
-                return
 
             if tf2Exists == False:
                 errorMsg = QMessageBox()
                 errorMsg.setWindowTitle("rei?")
-                errorMsg.setText("You dont seem to have Team Fortress 2 installed! It is a requirement to play Open Fortress.")
+                errorMsg.setText("You dont seem to have Team Fortress 2 installed! It is a requirement to play Open Fortress.\nHowever, you may continue if you think you've definitely have it installed.")
                 errorMsg.exec_()
                 existing_game_check(self, MainWindow)
-                return
 
 
         else:
