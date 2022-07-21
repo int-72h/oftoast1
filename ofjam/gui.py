@@ -16,7 +16,7 @@ from PyQt5.QtGui import QPalette, QColor, QFont, QFontDatabase,QMovie
 import sys
 
 global version
-version = '0.3.1'
+version = '0.3.2'
 user_agent = 'toast_ua'
 default_url = 'https://toast.openfortress.fun/toast/'
 
@@ -458,11 +458,13 @@ class Ui_MainWindow(object):
             (game_path / ".revision").touch(0o777)
             (game_path / ".revision").write_text(str(latest_revision))
             if errs != []:
-
-                error_message = '\n'.join(errs)
                 errorMsg = QMessageBox()
                 errorMsg.setWindowTitle("Toast Meditation")
-                errorMsg.setText(
+                error_message = '\n'.join(errs)
+                if "errorCode=29" or "errorCode=1" in error_message:
+                    errorMsg.setText("The server appears to have overheated. Try again later.")
+                else:
+                    errorMsg.setText(
                     "Something's gone wrong with the downloading! Post the following error(s) in the troubleshooting "
                     "channel: " + error_message)
                 errorMsg.exec_()
@@ -681,6 +683,7 @@ class Ui_MainWindow(object):
 
     def clickLaunch(self):
         #self.label_status.setText('Launching...')
+        args = self.launchoptionsbox.text()
         game_path = Path(self.gamedirbox.text())
         installed = os.path.isfile((game_path/Path('.revision')))
         if not installed:
@@ -743,11 +746,11 @@ class Ui_MainWindow(object):
         sdk = str(sdkPath)
         game = str(game_path)
         if platform.startswith('win32'):
-            run("start /d \"{}\" hl2.exe -game \"{}\" -secure -steam {}".format(sdk,game,self.launchoptionsbox.text()), shell=True)
+            run("start /d \"{}\" hl2.exe -game \"{}\" -secure -steam {}".format(sdk,game,args), shell=True)
         else:
             #hl2 = "{sdk}\hl2_linux".format(sdk = sdkPath)
             #run([hl2, "-game", ofpath])
-            Popen("\"{}/hl2.sh\" -game {} -secure -steam {}".format(sdk,game,self.launchoptionsbox.text()), shell=True)
+            Popen("\"{}/hl2.sh\" -game {} -secure -steam {}".format(sdk,game,args), shell=True)
         existing_game_check(self, MainWindow)
 
     def downloadWarning(self):
@@ -815,6 +818,7 @@ def work_verif(arr):
 
 
 def ariabar(arr, self, app, num_cpus=16):
+    print(num_cpus)
     todl = ResolvePath("todl.txt")
     certs = ResolvePath("ca-certificates.crt")
     x = open(todl, 'w')
@@ -831,11 +835,11 @@ def ariabar(arr, self, app, num_cpus=16):
     if sys.platform.startswith('win32'):
         ariapath = ResolvePath("aria2c.exe")
         drive = str(arr[0][1])[:2]
-        fp = Popen('{} --ca-certificate={} -i {} -d {} -x {} -j 100 -m 10 -V -U {}/{}'.format(ariapath,certs,todl,drive,num_cpus,user_agent,version), shell=True,
+        fp = Popen('{} --ca-certificate={} -i {} -d {} -x {} -j 100 -m 10 -V -U --disable-ipv6 {}/{}'.format(ariapath,certs,todl,drive,num_cpus,user_agent,version), shell=True,
                    stdin=PIPE, stdout=PIPE, universal_newlines=True)
     else:
         ariapath = ResolvePath("./aria2c")
-        fp = Popen('{} --ca-certificate={} -i {} -d / -x {} -j 100 -m 10 -V -U {}/{}'.format(ariapath,certs,todl,num_cpus,user_agent,version), shell=True,stdin=PIPE, stdout=PIPE, universal_newlines=True)
+        fp = Popen('{} --ca-certificate={} -i {} -d / -x {} -j 100 -m 10 -V -U --disable-ipv6 {}/{}'.format(ariapath,certs,todl,num_cpus,user_agent,version), shell=True,stdin=PIPE, stdout=PIPE, universal_newlines=True)
     done = False
     errs = []
     while not done:
@@ -854,7 +858,7 @@ def ariabar(arr, self, app, num_cpus=16):
                 app.processEvents()
             if "(OK):download completed" or '(ERR):error occurred' in l:
                 done = True
-            if "Exception" in  l:
+            if "Exception" in l:
                   errs.append(l)
             if "503" in l:
                 done = True
@@ -919,14 +923,6 @@ def existing_game_check(ui, MainWindow):
                 clickable(ui.launch).connect(ui.clickUpdate)
                 ui.verify.setStyleSheet("color: rgb(84, 82, 82);background-color: rgb(37, 27, 45);") # grey
                 ui.verify.setEnabled(False)
-            #elif revision > latest:
-            #    ui.launch.setText("Update")
-            #    clickable(ui.launch).connect(ui.clickUpdate)
-            #    ui.verify.setStyleSheet("color: rgb(84, 82, 82);background-color: rgb(37, 27, 45);") # grey
-            #    ui.launch.setStyleSheet("color: rgb(84, 82, 82);background-color: rgb(37, 27, 45);") # grey
-            #    ui.verify.setEnabled(False)
-            #    ui.secret.setVisible(True)
-            #    ui.secretText.setVisible(True)
             else:
                 ui.launch.setText("Launch")
                 clickable(ui.launch).connect(ui.clickLaunch)
