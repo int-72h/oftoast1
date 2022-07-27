@@ -2,12 +2,15 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import os
 from steam import *
 from sys import exit
-from tvn import *
+from pytoast import *
 import httpx
 import traceback
 import hashlib
 import pygame
 from time import time,sleep
+from Crypto.PublicKey import ECC
+from Crypto.Hash import SHA256
+from Crypto.Signature import DSS
 from subprocess import Popen, PIPE,call
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import QObject, pyqtSignal, QEvent, Qt
@@ -16,7 +19,7 @@ from PyQt5.QtGui import QPalette, QColor, QFont, QFontDatabase,QMovie
 import sys
 
 global version
-version = '0.3.3'
+version = '0.4.0'
 user_agent = 'toast_ua'
 default_url = 'https://toast.openfortress.fun/toast/'
 
@@ -410,7 +413,8 @@ class Ui_MainWindow(object):
             try:
                 num_threads = get_threads(url)
                 latest_ver = get_latest_ver(url)
-                latest_revision = fetch_latest_revision(url)
+                verif = DSS.new(get_pub_key(url),'fips-186-3',encoding='der')
+                latest_revision = fetch_latest_revision(url,verif)
             except:
                 errorMsg = QMessageBox()
                 errorMsg.setWindowTitle("OFToast")
@@ -433,7 +437,7 @@ class Ui_MainWindow(object):
                     "This isn't the latest version of the launcher! Please ensure you update here: https://toast.openfortress.fun/toast/ \nlatest "
                     "version: " + latest_ver)
                 errorMsg.exec_()
-            revisions = fetch_revisions(url, installed_revision, latest_revision)
+            revisions = fetch_revisions(url, installed_revision, latest_revision,verif)
             changes = replay_changes(revisions)
             writes = list(filter(lambda x: x["type"] == TYPE_WRITE, changes))
             todl = [[url + "objects/" + x["object"], game_path / x["path"], x["hash"]] for x in writes]
@@ -596,7 +600,8 @@ class Ui_MainWindow(object):
             try:
                 num_threads = get_threads(url)
                 latest_ver = get_latest_ver(url)
-                latest_revision = fetch_latest_revision(url)
+                verif = DSS.new(get_pub_key(url),'fips-186-3',encoding='der')
+                latest_revision = fetch_latest_revision(url,verif)
             except:
                 errorMsg = QMessageBox()
                 errorMsg.setWindowTitle("OFToast")
@@ -615,7 +620,7 @@ class Ui_MainWindow(object):
                     "version: " + latest_ver)
                 errorMsg.exec_()
             app.processEvents()
-            revisions = fetch_revisions(url, installed_revision, latest_revision)
+            revisions = fetch_revisions(url, installed_revision, latest_revision,verif)
             changes = replay_changes(revisions)
             writes = list(filter(lambda x: x["type"] == TYPE_WRITE, changes))
             todl = [[url + "objects/" + x["object"], game_path / x["path"], x["hash"]] for x in writes]
@@ -884,26 +889,38 @@ def pbar_qt_verif(iter, self, app, num_cpus=16):
         app.processEvents()
 
 
-def get_revision(url: str, revision: int):
-    r = httpx.get(url + "/" + str(revision), headers={'user-agent': user_agent}, follow_redirects=True)
-    return json.loads(r.text)
+#def get_revision(url: str, revision: int,verif):
+#    r = httpx.get(url + "/" + str(revision), headers={'user-agent': user_agent}, follow_redirects=True)
+#    sig = httpx.get(url + "/" + str(revision) + ".sig", headers={'user-agent': user_agent}, follow_redirects=True)
+#    latest_hash = SHA256.new(r.read())
+#    verif.verify(latest_hash, sig.read())
+#    return json.loads(r.text)
 
 
-def fetch_latest_revision(url):
+def fetch_latest_revision(url,verif):
     # r = urllib.request.urlopen()
     r = httpx.get(url + "revisions/latest", headers={'user-agent': user_agent}, follow_redirects=True)
+    sig = httpx.get(url + "revisions/latest.sig", headers={'user-agent': user_agent}, follow_redirects=True)
+    latest_hash = SHA256.new(r.read())
+    verif.verify(latest_hash, sig.read())
     return int(r.text)
 
 
-def fetch_revisions(url, first, last):
+def fetch_revisions(url, first, last,verif):
     revisions = []
     for x in range(first + 1, last + 1):
         if not (x < 0):
             # r = urllib.request.urlopen(url + "revisions/" + str(x))
-            r = httpx.get(url + "revisions/" + str(x), headers={'user-agent': user_agent}, follow_redirects=True)
-            revisions.append(json.loads(r.text))
+            rev = httpx.get(url + "revisions/" + str(x), headers={'user-agent': user_agent}, follow_redirects=True)
+            sig = httpx.get(url + "revisions/" + str(x) + ".sig", headers={'user-agent': user_agent}, follow_redirects=True)
+            latest_hash = SHA256.new(rev.read())
+            verif.verify(latest_hash,sig.read())
+            revisions.append(json.loads(rev.text))
     return revisions
 
+def get_pub_key(url):
+    r = httpx.get(url + "/pubkey.pem", headers={'user-agent': user_agent}, follow_redirects=True)
+    return ECC.import_key(r.read())
 
 def existing_game_check(ui, MainWindow):
     ofpath = getpath()
@@ -921,8 +938,9 @@ def existing_game_check(ui, MainWindow):
     ui.installed.setVisible(True)
     if ofpath != -1:
         sdk_download(ofpath.parents[1])
+        verif = DSS.new(get_pub_key(default_url),'fips-186-3',encoding='der')
         revision = get_installed_revision(ofpath)
-        latest = fetch_latest_revision(default_url)
+        latest = fetch_latest_revision(default_url,verif)
         if revision > 0:
             ui.installed.setText("Current Game Version: " + str(revision))
             ui.latest.setText("Latest Game Version: " + str(latest))
