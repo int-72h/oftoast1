@@ -16,7 +16,7 @@ from PyQt5.QtGui import QPalette, QColor, QFont, QFontDatabase,QMovie
 import sys
 
 global version
-version = '0.3.2'
+version = '0.3.3'
 user_agent = 'toast_ua'
 default_url = 'https://toast.openfortress.fun/toast/'
 
@@ -785,14 +785,22 @@ def work(arr,verif = False):
     done = False
     if (verif):
         cmd = cmd + " --auto-file-renaming=false --allow-overwrite=true"
+    fp = Popen(cmd, shell=True, stdout=PIPE,universal_newlines=True)
+    errs = []
     while not done:
-        fp = Popen(cmd, shell=True, stdout=PIPE)
-        fp.wait()
-        content = [x.decode(encoding="utf-8", errors="ignore") for x in fp.stdout]
-        if 'OK' in content[-1]:
-            done = True
-        else:
-            print(content)
+        for l in fp.stdout:
+            print(l)
+            app.processEvents()
+            if 'Verification finished successfully.' in l:
+                app.processEvents()
+            if "(OK):download completed" or '(ERR):error occurred' in l:
+                done = True
+            if "Exception" in  l:
+                  errs.append(l)
+            if "503" in l:
+                done = True
+    return errs
+
 
 
 def work_verif(arr):
