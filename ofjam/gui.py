@@ -16,7 +16,7 @@ from PyQt5.QtGui import QPalette, QColor, QFont, QFontDatabase,QMovie
 import sys
 
 global version
-version = '0.3.1'
+version = '0.3.3'
 user_agent = 'toast_ua'
 default_url = 'https://toast.openfortress.fun/toast/'
 
@@ -458,11 +458,13 @@ class Ui_MainWindow(object):
             (game_path / ".revision").touch(0o777)
             (game_path / ".revision").write_text(str(latest_revision))
             if errs != []:
-
-                error_message = '\n'.join(errs)
                 errorMsg = QMessageBox()
                 errorMsg.setWindowTitle("Toast Meditation")
-                errorMsg.setText(
+                error_message = '\n'.join(errs)
+                if "errorCode=29" or "errorCode=1" in error_message:
+                    errorMsg.setText("The server appears to have overheated. Try again later.")
+                else:
+                    errorMsg.setText(
                     "Something's gone wrong with the downloading! Post the following error(s) in the troubleshooting "
                     "channel: " + error_message)
                 errorMsg.exec_()
@@ -516,20 +518,20 @@ class Ui_MainWindow(object):
             f.close()
             advWindow.setVisible(True)
             advWindow.setEnabled(True)
-        if os.path.exists("{}/gamedir.txt".format(p)):
-            f = open("{}/gamedir.txt".format(p), 'r')
-            self.gamedirbox.setText(f.read())
-            f.close()
-            advWindow.setVisible(True)
-            advWindow.setEnabled(True)
-        else:
-            if not os.path.exists(p):
-                os.makedirs(p)
-            f = open("{}/gamedir.txt".format(p), 'w')
-            f.write(self.gamedirbox.text())
-            f.close()
-            advWindow.setVisible(True)
-            advWindow.setEnabled(True)
+        #if os.path.exists("{}/gamedir.txt".format(p)):
+        #    f = open("{}/gamedir.txt".format(p), 'r')
+        #    self.gamedirbox.setText(f.read())
+        #    f.close()
+        #    advWindow.setVisible(True)
+        #    advWindow.setEnabled(True)
+        #else:
+        #    if not os.path.exists(p):
+        #        os.makedirs(p)
+        #    f = open("{}/gamedir.txt".format(p), 'w')
+        #    f.write(self.gamedirbox.text())
+        #    f.close()
+        #    advWindow.setVisible(True)
+        #    advWindow.setEnabled(True)
         self.buttonBox.clicked.connect(self.advClose)
     
     def advClose(self):
@@ -537,9 +539,9 @@ class Ui_MainWindow(object):
         f = open("{}/launchoptions.txt".format(p), 'w')
         f.write(str(self.launchoptionsbox.text()))
         f.close()
-        g = open("{}/launchoptions.txt".format(p), 'w')
-        g.write(str(self.gamedirbox.text()))
-        g.close()
+        #g = open("{}/launchoptions.txt".format(p), 'w')
+        #g.write(str(self.gamedirbox.text()))
+        #g.close()
         self.launchoptionsbox.setText(str(self.launchoptionsbox.text()))
         self.gamedirbox.setText(str(self.gamedirbox.text()))
         self.downloadurl.setText(str(self.downloadurl.text()))
@@ -681,6 +683,7 @@ class Ui_MainWindow(object):
 
     def clickLaunch(self):
         #self.label_status.setText('Launching...')
+        args = self.launchoptionsbox.text()
         game_path = Path(self.gamedirbox.text())
         installed = os.path.isfile((game_path/Path('.revision')))
         if not installed:
@@ -713,26 +716,23 @@ class Ui_MainWindow(object):
                 errorMsg = QMessageBox()
                 errorMsg.setWindowTitle("rei?")
                 errorMsg.setText("You dont seem to have the Source Sdk 2013 Base Multiplayer or Team Fortress 2 installed!" +
-                "They are a requirement to play Open Fortress.")
+                "They are a requirement to play Open Fortress.\nHowever, you may continue if you think you've definitely have both installed.")
                 errorMsg.exec_()
                 existing_game_check(self, MainWindow)
-                return
 
             if sdkExists == False:
                 errorMsg = QMessageBox()
                 errorMsg.setWindowTitle("rei?")
-                errorMsg.setText("You dont seem to have the Source Sdk 2013 Base Multiplayer installed! It is a requirement to play Open Fortress.")
+                errorMsg.setText("You dont seem to have the Source Sdk 2013 Base Multiplayer installed! It is a requirement to play Open Fortress.\nHowever, you may continue if you think you've definitely have it installed.")
                 errorMsg.exec_()
                 existing_game_check(self, MainWindow)
-                return
 
             if tf2Exists == False:
                 errorMsg = QMessageBox()
                 errorMsg.setWindowTitle("rei?")
-                errorMsg.setText("You dont seem to have Team Fortress 2 installed! It is a requirement to play Open Fortress.")
+                errorMsg.setText("You dont seem to have Team Fortress 2 installed! It is a requirement to play Open Fortress.\nHowever, you may continue if you think you've definitely have it installed.")
                 errorMsg.exec_()
                 existing_game_check(self, MainWindow)
-                return
 
 
         else:
@@ -746,11 +746,11 @@ class Ui_MainWindow(object):
         sdk = str(sdkPath)
         game = str(game_path)
         if platform.startswith('win32'):
-            run("start /d \"{}\" hl2.exe -game \"{}\" -secure -steam {}".format(sdk,game,self.launchoptionsbox.text()), shell=True)
+            run("start /d \"{}\" hl2.exe -game \"{}\" -secure -steam {}".format(sdk,game,args), shell=True)
         else:
             #hl2 = "{sdk}\hl2_linux".format(sdk = sdkPath)
             #run([hl2, "-game", ofpath])
-            Popen("\"{}/hl2.sh\" -game {} -secure -steam {}".format(sdk,game,self.launchoptionsbox.text()), shell=True)
+            Popen("\"{}/hl2.sh\" -game {} -secure -steam {}".format(sdk,game,args), shell=True)
         existing_game_check(self, MainWindow)
 
     def downloadWarning(self):
@@ -777,22 +777,30 @@ def work(arr,verif = False):
     if sys.platform.startswith('win32'):
         ariapath = ResolvePath("aria2c.exe")
         drive = str(arr[1])[:2]
-        cmd = '{} {} -o \"{}\" --checksum=md5={} --ca-certificate={} -d {} -j 100 -m 10 -V -U {}/{}'.format(ariapath,arr[0],str(arr[1])[3:],arr[2],certs,drive,user_agent,version)
+        cmd = '{} {} -o \"{}\" --checksum=md5={} --ca-certificate={} -d {} -j 100 --disable-ipv6 -m 10 -V -U {}/{}'.format(ariapath,arr[0],str(arr[1])[3:],arr[2],certs,drive,user_agent,version)
 
     else:
         ariapath = ResolvePath("./aria2c")
-        cmd = '{} {} -o \"{}\" --checksum=md5={} --ca-certificate={} -d / -j 100 -m 10 -V -U {}/{}'.format(ariapath,arr[0],arr[1],arr[2],certs,user_agent,version)
+        cmd = '{} {} -o \"{}\" --checksum=md5={} --ca-certificate={} -d / -j 100 --disable-ipv6 -m 10 -V -U {}/{}'.format(ariapath,arr[0],arr[1],arr[2],certs,user_agent,version)
     done = False
     if (verif):
         cmd = cmd + " --auto-file-renaming=false --allow-overwrite=true"
+    fp = Popen(cmd, shell=True, stdout=PIPE,universal_newlines=True)
+    errs = []
     while not done:
-        fp = Popen(cmd, shell=True, stdout=PIPE)
-        fp.wait()
-        content = [x.decode(encoding="utf-8", errors="ignore") for x in fp.stdout]
-        if 'OK' in content[-1]:
-            done = True
-        else:
-            print(content)
+        for l in fp.stdout:
+            print(l)
+            app.processEvents()
+            if 'Verification finished successfully.' in l:
+                app.processEvents()
+            if "(OK):download completed" or '(ERR):error occurred' in l:
+                done = True
+            if "Exception" in  l:
+                  errs.append(l)
+            if "503" in l:
+                done = True
+    return errs
+
 
 
 def work_verif(arr):
@@ -818,6 +826,7 @@ def work_verif(arr):
 
 
 def ariabar(arr, self, app, num_cpus=16):
+    print(num_cpus)
     todl = ResolvePath("todl.txt")
     certs = ResolvePath("ca-certificates.crt")
     x = open(todl, 'w')
@@ -834,11 +843,11 @@ def ariabar(arr, self, app, num_cpus=16):
     if sys.platform.startswith('win32'):
         ariapath = ResolvePath("aria2c.exe")
         drive = str(arr[0][1])[:2]
-        fp = Popen('{} --ca-certificate={} -i {} -d {} -x {} -j 100 -m 10 -V -U {}/{}'.format(ariapath,certs,todl,drive,num_cpus,user_agent,version), shell=True,
+        fp = Popen('{} --ca-certificate={} -i {} -d {} -x {} -j 100 -m 10 -V --disable-ipv6 -U {}/{}'.format(ariapath,certs,todl,drive,num_cpus,user_agent,version), shell=True,
                    stdin=PIPE, stdout=PIPE, universal_newlines=True)
     else:
         ariapath = ResolvePath("./aria2c")
-        fp = Popen('{} --ca-certificate={} -i {} -d / -x {} -j 100 -m 10 -V -U {}/{}'.format(ariapath,certs,todl,num_cpus,user_agent,version), shell=True,stdin=PIPE, stdout=PIPE, universal_newlines=True)
+        fp = Popen('{} --ca-certificate={} -i {} -d / -x {} -j 100 -m 10 -V --disable-ipv6 -U {}/{}'.format(ariapath,certs,todl,num_cpus,user_agent,version), shell=True,stdin=PIPE, stdout=PIPE, universal_newlines=True)
     done = False
     errs = []
     while not done:
@@ -857,7 +866,7 @@ def ariabar(arr, self, app, num_cpus=16):
                 app.processEvents()
             if "(OK):download completed" or '(ERR):error occurred' in l:
                 done = True
-            if "Exception" in  l:
+            if "Exception" in l:
                   errs.append(l)
             if "503" in l:
                 done = True
@@ -922,14 +931,6 @@ def existing_game_check(ui, MainWindow):
                 clickable(ui.launch).connect(ui.clickUpdate)
                 ui.verify.setStyleSheet("color: rgb(84, 82, 82);background-color: rgb(37, 27, 45);") # grey
                 ui.verify.setEnabled(False)
-            #elif revision > latest:
-            #    ui.launch.setText("Update")
-            #    clickable(ui.launch).connect(ui.clickUpdate)
-            #    ui.verify.setStyleSheet("color: rgb(84, 82, 82);background-color: rgb(37, 27, 45);") # grey
-            #    ui.launch.setStyleSheet("color: rgb(84, 82, 82);background-color: rgb(37, 27, 45);") # grey
-            #    ui.verify.setEnabled(False)
-            #    ui.secret.setVisible(True)
-            #    ui.secretText.setVisible(True)
             else:
                 ui.launch.setText("Launch")
                 clickable(ui.launch).connect(ui.clickLaunch)
