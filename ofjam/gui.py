@@ -777,7 +777,7 @@ def work(arr,verif = False):
     if sys.platform.startswith('win32'):
         ariapath = ResolvePath("aria2c.exe")
         drive = str(arr[1])[:2]
-        cmd = '{} {} -o \"{}\" --checksum=md5={} --ca-certificate={} -d {} -j 100 --disable-ipv6 -m 10 -V -U {}/{}'.format(ariapath,arr[0],str(arr[1])[3:],arr[2],certs,drive,user_agent,version)
+        cmd = '\"{}\" \"{}\" -o \"{}\" --checksum=md5=\"{}\" --ca-certificate=\"{}\" -d \"{}\" -j 100 --disable-ipv6 -m 10 -V -U {}/{}'.format(ariapath,arr[0],str(arr[1])[3:],arr[2],certs,drive,user_agent,version)
 
     else:
         ariapath = ResolvePath("./aria2c")
@@ -843,7 +843,7 @@ def ariabar(arr, self, app, num_cpus=16):
     if sys.platform.startswith('win32'):
         ariapath = ResolvePath("aria2c.exe")
         drive = str(arr[0][1])[:2]
-        fp = Popen('{} --ca-certificate={} -i {} -d {} -x {} -j 100 -m 10 -V --disable-ipv6 -U {}/{}'.format(ariapath,certs,todl,drive,num_cpus,user_agent,version), shell=True,
+        fp = Popen('\"{}\" --ca-certificate=\"{}\" -i \"{}\" -d \"{}\" -x \"{}\" -j 100 -m 10 -V --disable-ipv6 -U {}/{}'.format(ariapath,certs,todl,drive,num_cpus,user_agent,version), shell=True,
                    stdin=PIPE, stdout=PIPE, universal_newlines=True)
     else:
         ariapath = ResolvePath("./aria2c")
