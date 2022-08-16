@@ -16,7 +16,7 @@ from PyQt5.QtGui import QPalette, QColor, QFont, QFontDatabase,QMovie
 import sys
 
 global version
-version = '0.3.3'
+version = '0.3.4'
 user_agent = 'toast_ua'
 default_url = 'https://toast.openfortress.fun/toast/'
 
