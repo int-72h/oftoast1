@@ -291,7 +291,6 @@ class Ui_MainWindow(object):
         self.verify.setGeometry(QtCore.QRect(20, 330, 93, 28))
         self.verify.setFont(self.font3)
         self.verify.setStyleSheet("color: rgb(238, 225, 207)")
-        clickable(self.verify).connect(self.clickVerify)
 
         self.line_2 = QtWidgets.QFrame(self.centralwidget)
         self.line_2.setObjectName("line_2")
@@ -939,6 +938,7 @@ def existing_game_check(ui, MainWindow):
                 clickable(ui.launch).connect(ui.clickLaunch)
                 ui.verify.setStyleSheet("color: rgb(238, 225, 207);")
                 ui.verify.setEnabled(True)
+                clickable(ui.verify).connect(ui.clickVerify)
         else:
             ui.installed.setGeometry(QtCore.QRect(140, 290, 480, 50))
             ui.installed.setText("Click Install now!")
