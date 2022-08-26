@@ -296,7 +296,6 @@ class Ui_MainWindow(object):
         self.verify.setGeometry(QtCore.QRect(20, 330, 93, 28))
         self.verify.setFont(self.font3)
         self.verify.setStyleSheet("color: rgb(238, 225, 207)")
-        clickable(self.verify).connect(self.clickVerify)
 
         self.line_2 = QtWidgets.QFrame(self.centralwidget)
         self.line_2.setObjectName("line_2")
@@ -712,9 +711,11 @@ class Ui_MainWindow(object):
         if platform.startswith('win32'):
             run("start /d \"{}\" hl2.exe -game \"{}\" -secure -steam {}".format(sdk, game, args), shell=True)
         else:
-            # hl2 = "{sdk}\hl2_linux".format(sdk = sdkPath)
-            # run([hl2, "-game", ofpath])
-            Popen("\"{}/hl2.sh\" -game {} -secure -steam {}".format(sdk, game, args), shell=True)
+            # Needed to run under the Steam Runtime
+            os.environ["SteamEnv"] = "1"
+            #hl2 = "{sdk}\hl2_linux".format(sdk = sdkPath)
+            #run([hl2, "-game", ofpath])
+            Popen("\"{}/hl2.sh\" -game {} -secure -steam {}".format(sdk,game,args), shell=True)
         existing_game_check(self, MainWindow)
 
     def downloadWarning(self):
@@ -748,62 +749,6 @@ def get_latest_ver(url):
 def get_bandwidth(url):
     r = httpx.get(url + "/reiwidth", headers={'user-agent': user_agent}, follow_redirects=True)
     return r.text.strip()
-
-
-#def work(arr, verif=False):
-#    certs = ResolvePath("ca-certificates.crt")
-#    if sys.platform.startswith('win32'):
-#        ariapath = ResolvePath("aria2c.exe")
-#        drive = str(arr[1])[:2]
-#        cmd = '{} {} -o \"{}\" --checksum=md5={} --ca-certificate={} -d {} -j 100 --disable-ipv6 -m 10 -V -U {}/{}'.format(
-#            ariapath, arr[0], str(arr[1])[3:], arr[2], certs, drive, user_agent,
-#            version)  # using all threads and limiting jobs, or using all jobs and limiting threads? hmm...
-#
-#    else:
-#        ariapath = ResolvePath("./aria2c")
-#        cmd = '{} {} -o \"{}\" --checksum=md5={} --ca-certificate={} -d / -j 100 --disable-ipv6 -m 10 -V -U {}/{}'.format(
-#            ariapath, arr[0], arr[1], arr[2], certs, user_agent, version)
-#    done = False
-#    if (verif):
-#        cmd = cmd + " --auto-file-renaming=false --allow-overwrite=true"
-#    fp = Popen(cmd, shell=True, stdout=PIPE, universal_newlines=True)
-#    errs = []
-#    while not done:
-#        for l in fp.stdout:
-#            print(l)
-#            app.processEvents()
-#            if 'Verification finished successfully.' in l:
-#                app.processEvents()
-#            if "(OK):download completed" or '(ERR):error occurred' in l:
-#                done = True
-#            if "Exception" in l:
-#                errs.append(l)
-#            if "503" in l:
-#                done = True
-#    return errs
-#
-#
-#def work_verif(arr):
-#    try:
-#        if arr[1].exists():
-#            f = open(arr[1], "rb")
-#            fcontents = f.read()
-#            f.close()
-#            hasher = hashlib.md5()
-#            hasher.update(fcontents)
-#            hodl = hasher.hexdigest()
-#            if hodl == arr[2]:
-#                # good :)
-#                pass
-#            else:
-#                print(arr[1], "failed verification, redownloading...")
-#                work(arr, True)
-#        else:
-#            print(arr[1], "not found, redownloading...")
-#            work(arr)
-#    except:
-#        work_verif(arr)
-
 
 def ariabar(arr, self, app, num_cpus=16, verif=False):
     print(num_cpus)
@@ -869,18 +814,6 @@ def ariabar(arr, self, app, num_cpus=16, verif=False):
     return errs
 
 
-#def pbar_qt_verif(iter, self, app, num_cpus=16):
-#    length = len(iter)
-#    z = 0
-#    executor = ThreadPoolExecutor(num_cpus)
-#    futures = {executor.submit(work_verif, x): x for x in iter}
-#    for _ in as_completed(futures):
-#        z = z + 1
-#        self.progressBar.setValue(z)
-#        self.progressBar.setMaximum(length)
-#        app.processEvents()
-
-
 def ariabar_verif(iter, self, app, num_cpus=16):
     self.progressBarTextUnder.setVisible(True)
     length = len(iter)
@@ -909,8 +842,6 @@ def ariabar_verif(iter, self, app, num_cpus=16):
         self.progressBarTextUnder.setText("{}/{}".format(z,length))
         z += 1
     ariabar(todl_array, self, app, num_cpus)
-
-
 
 def fetch_latest_revision(url, verif):
     r = httpx.get(url + "revisions/latest", headers={'user-agent': user_agent}, follow_redirects=True)
@@ -996,6 +927,7 @@ def existing_game_check(ui, MainWindow):
                 clickable(ui.launch).connect(ui.clickLaunch)
                 ui.verify.setStyleSheet("color: rgb(238, 225, 207);")
                 ui.verify.setEnabled(True)
+                clickable(ui.verify).connect(ui.clickVerify)
         else:
             ui.installed.setGeometry(QtCore.QRect(140, 290, 480, 50))
             ui.installed.setText("Click Install now!")
