@@ -1,4 +1,3 @@
-from concurrent.futures import ThreadPoolExecutor, as_completed
 import os
 from steam import *
 from sys import exit
@@ -7,7 +6,6 @@ import httpx
 import traceback
 import hashlib
 import pygame
-from time import time, sleep
 from Crypto.PublicKey import ECC
 from Crypto.Hash import SHA256
 from Crypto.Signature import DSS
@@ -356,31 +354,6 @@ class Ui_MainWindow(object):
         self.gamedirbox.setText(_translate("MainWindow", "GAMEDIR"))
         self.launchoptionsbox.setText(_translate("MainWindow", "-console"))
 
-        # self.lineEdit.setText(_translate("MainWindow", "GAMEDIR"))
-        # self.label_2.setText(_translate("MainWindow", "Download URL:"))
-        # self.label_4.setText(_translate("MainWindow", "Install Folder:"))
-        # self.label_status.setText(_translate("MainWindow", "Waiting to Download"))
-        # self.lineEdit_2.setText(_translate("MainWindow", "https://toast.openfortress.fun/toast"))
-        # self.pushButton.setText(_translate("MainWindow", "Install"))
-        # self.pushButton_2.setText(_translate("MainWindow", "Advanced"))
-        # self.pushButton_3.setText(_translate("MainWindow", "Verify"))
-        # self.pushButton_5.setText(_translate("MainWindow", "Unmute"))
-        # self.label_3.setText(_translate("MainWindow", "Installed Revision: None"))
-        # self.pushButton_4.setText(_translate("MainWindow", "Launch"))
-
-    # def clickBrowse(self):
-    #    temp = self.lineEdit.text()
-    #    gamepath = QFileDialog.getExistingDirectory(MainWindow, "Game path", "")
-    #    if gamepath == '':
-    #        self.lineEdit.setText(temp)
-    #    else:
-    #        self.lineEdit.setText(gamepath)
-    #    revision = get_installed_revision(Path(self.lineEdit.text()))
-    #    if revision >= 0:
-    #        self.label_3.setText("Installed Revision: " + str(revision))
-    #    else:
-    #        self.label_3.setText("Installed Revision: None")
-
     def clickUpdate(self):
         self.play(ResolvePath("toast.wav"), 0)
         self.play(ResolvePath("start.wav"), 1)
@@ -525,20 +498,6 @@ class Ui_MainWindow(object):
             f.close()
             advWindow.setVisible(True)
             advWindow.setEnabled(True)
-        # if os.path.exists("{}/gamedir.txt".format(p)):
-        #    f = open("{}/gamedir.txt".format(p), 'r')
-        #    self.gamedirbox.setText(f.read())
-        #    f.close()
-        #    advWindow.setVisible(True)
-        #    advWindow.setEnabled(True)
-        # else:
-        #    if not os.path.exists(p):
-        #        os.makedirs(p)
-        #    f = open("{}/gamedir.txt".format(p), 'w')
-        #    f.write(self.gamedirbox.text())
-        #    f.close()
-        #    advWindow.setVisible(True)
-        #    advWindow.setEnabled(True)
         self.buttonBox.clicked.connect(self.advClose)
 
     def advClose(self):
@@ -546,9 +505,6 @@ class Ui_MainWindow(object):
         f = open("{}/launchoptions.txt".format(p), 'w')
         f.write(str(self.launchoptionsbox.text()))
         f.close()
-        # g = open("{}/launchoptions.txt".format(p), 'w')
-        # g.write(str(self.gamedirbox.text()))
-        # g.close()
         self.launchoptionsbox.setText(str(self.launchoptionsbox.text()))
         self.gamedirbox.setText(str(self.gamedirbox.text()))
         self.downloadurl.setText(str(self.downloadurl.text()))
@@ -568,8 +524,6 @@ class Ui_MainWindow(object):
                 self.play(ResolvePath("toast.wav"), 0)
 
     def clickVerify(self):
-        # self.label.setMovie(self.movie)
-        # self.movie.start()
         self.play(ResolvePath("start.wav"), 1)
         global version
         try:
@@ -900,7 +854,7 @@ def ariabar(arr, self, app, num_cpus=16, verif=False):
                 z = z + 1
                 self.progressBar.setValue(z)
                 self.progressBar.setMaximum(length)
-                fileName = l.split("open_fortress")[1]
+                fileName = l.split("open_fortress")[1] # change!!
                 self.progressBarTextUnder.setText(text.format(fileName, z, totalfileCount))
                 if not self.muted:
                     if not pygame.mixer.Channel(0).get_busy():
@@ -957,16 +911,8 @@ def ariabar_verif(iter, self, app, num_cpus=16):
     ariabar(todl_array, self, app, num_cpus)
 
 
-# def get_revision(url: str, revision: int,verif):
-#    r = httpx.get(url + "/" + str(revision), headers={'user-agent': user_agent}, follow_redirects=True)
-#    sig = httpx.get(url + "/" + str(revision) + ".sig", headers={'user-agent': user_agent}, follow_redirects=True)
-#    latest_hash = SHA256.new(r.read())
-#    verif.verify(latest_hash, sig.read())
-#    return json.loads(r.text)
-
 
 def fetch_latest_revision(url, verif):
-    # r = urllib.request.urlopen()
     r = httpx.get(url + "revisions/latest", headers={'user-agent': user_agent}, follow_redirects=True)
     sig = httpx.get(url + "revisions/latest.sig", headers={'user-agent': user_agent}, follow_redirects=True)
     latest_hash = SHA256.new(r.read())
@@ -987,7 +933,6 @@ def fetch_revisions(url, first, last, verif):
     revisions = []
     for x in range(first + 1, last + 1):
         if not (x < 0):
-            # r = urllib.request.urlopen(url + "revisions/" + str(x))
             rev = httpx.get(url + "revisions/" + str(x), headers={'user-agent': user_agent}, follow_redirects=True)
             sig = httpx.get(url + "revisions/" + str(x) + ".sig", headers={'user-agent': user_agent},
                             follow_redirects=True)
