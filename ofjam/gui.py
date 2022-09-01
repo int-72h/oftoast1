@@ -6,9 +6,6 @@ import httpx
 import traceback
 import hashlib
 import pygame
-from Crypto.PublicKey import ECC
-from Crypto.Hash import SHA256
-from Crypto.Signature import DSS
 from subprocess import Popen, PIPE, call
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import QObject, pyqtSignal, QEvent, Qt
@@ -17,7 +14,7 @@ from PyQt5.QtGui import QPalette, QColor, QFont, QFontDatabase, QMovie
 import sys
 
 global version
-version = '0.4.0'
+version = '0.3.99'
 user_agent = 'toast_ua'
 default_url = 'https://toast.openfortress.fun/toast/'
 
@@ -201,8 +198,6 @@ class Ui_MainWindow(object):
         self.mute.setIcon(self.muteico)
         clickable(self.mute).connect(self.clickMute)
 
-        # self.movie = QMovie(ResolvePath("toast.gif"))
-
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap(ResolvePath("toast.png")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         MainWindow.setWindowIcon(icon)
@@ -210,7 +205,7 @@ class Ui_MainWindow(object):
         self.launcher = QtWidgets.QLabel(self.centralwidget)
         self.launcher.setObjectName("launcher")
         self.launcher.setGeometry(QtCore.QRect(260, 160, 361, 50))
-        self.launcher.setAlignment(Qt.AlignRight)
+        self.launcher.setAlignment(Qt.AlignCenter)
         self.font1 = QFont()
         self.font1.setFamily("Staatliches")
         self.font1.setPointSize(28)
@@ -388,8 +383,7 @@ class Ui_MainWindow(object):
             try:
                 num_threads = get_threads(url)
                 latest_ver = get_latest_ver(url)
-                verif = DSS.new(get_pub_key(url), 'fips-186-3', encoding='der')
-                latest_revision = fetch_latest_revision(url, verif)
+                latest_revision = fetch_latest_revision(url)
             except:
                 errorMsg = QMessageBox()
                 errorMsg.setWindowTitle("OFToast")
@@ -412,7 +406,7 @@ class Ui_MainWindow(object):
                     "This isn't the latest version of the launcher! Please ensure you update here: https://toast.openfortress.fun/toast/ \nlatest "
                     "version: " + latest_ver)
                 errorMsg.exec_()
-            revisions = fetch_revisions(url, installed_revision, latest_revision, verif)
+            revisions = fetch_revisions(url, installed_revision, latest_revision)
             changes = replay_changes(revisions)
             writes = list(filter(lambda x: x["type"] == TYPE_WRITE, changes))
             todl = [[url + "objects/" + x["object"], game_path / x["path"], x["hash"]] for x in writes]
@@ -437,9 +431,11 @@ class Ui_MainWindow(object):
             (game_path / ".revision").touch(0o777)
             (game_path / ".revision").write_text(str(latest_revision))
             if errs != []:
+                print(errs)
                 errorMsg = QMessageBox()
                 errorMsg.setWindowTitle("Toast Meditation")
                 error_message = '\n'.join(errs)
+
                 if "errorCode=29" or "errorCode=1" in error_message:
                     errorMsg.setText("The server appears to have overheated. Try again later.")
                 else:
@@ -554,8 +550,7 @@ class Ui_MainWindow(object):
             try:
                 num_threads = get_threads(url)
                 latest_ver = get_latest_ver(url)
-                verif = DSS.new(get_pub_key(url), 'fips-186-3', encoding='der')
-                latest_revision = fetch_latest_revision(url, verif)
+                latest_revision = fetch_latest_revision(url)
             except:
                 errorMsg = QMessageBox()
                 errorMsg.setWindowTitle("OFToast")
@@ -574,7 +569,7 @@ class Ui_MainWindow(object):
                     "version: " + latest_ver)
                 errorMsg.exec_()
             app.processEvents()
-            revisions = fetch_revisions(url, installed_revision, latest_revision, verif)
+            revisions = fetch_revisions(url, installed_revision, latest_revision)
             changes = replay_changes(revisions)
             writes = list(filter(lambda x: x["type"] == TYPE_WRITE, changes))
             todl = [[url + "objects/" + x["object"], game_path / x["path"], x["hash"]] for x in writes]
@@ -642,6 +637,10 @@ class Ui_MainWindow(object):
 
     def clickLaunch(self):
         # self.label_status.setText('Launching...')
+        p = os.path.join(os.path.expanduser('~'), ".oftoast")
+        if os.path.exists("{}/launchoptions.txt".format(p)):
+            f = open("{}/launchoptions.txt".format(p), 'r')
+            self.launchoptionsbox.setText(f.read())
         args = self.launchoptionsbox.text()
         game_path = Path(self.gamedirbox.text())
         installed = os.path.isfile((game_path / Path('.revision')))
@@ -731,7 +730,7 @@ class Ui_MainWindow(object):
         CredMsg = QMessageBox()
         CredMsg.setWindowTitle("Credits")
         CredMsg.setText(
-            "OFToast (aka of-jam/oflauncher-rei) v{}\nToastmaster General, Toaster SFX, Lead Developer: intcoms\nLead Developer for Jam, Server Maintainer: Bryson\nLead Developer for Toast/TVN: welt\nUI design, Music (Waiting for Toast): Mattie\nUI Design: Cherry\nUI Design: Pont\n\nSpecial thanks to Kay and everyone on the OFTeam!".format(
+            "OFToast (aka of-jam/oflauncher-rei) v{}\nToastmaster General, Toaster SFX, Lead Developer: intcoms\nLead Developer for Jam, Server Maintainer: Bryson\nLead Developer for Toast/TVN: welt\nUI design, Music (Waiting for Toast): Mattie\nUI Design: Cherry\nUI Design: Pont\n\nSpecial thanks to Kay and everyone on the OFTeam!\n6f66746f617374203220636f6e6669726d6564".format(
                 version))
         CredMsg.exec_()
 
@@ -745,10 +744,6 @@ def get_latest_ver(url):
     r = httpx.get(url + "/reiversion", headers={'user-agent': user_agent}, follow_redirects=True)
     return r.text.strip()
 
-
-def get_bandwidth(url):
-    r = httpx.get(url + "/reiwidth", headers={'user-agent': user_agent}, follow_redirects=True)
-    return r.text.strip()
 
 def ariabar(arr, self, app, num_cpus=16, verif=False):
     print(num_cpus)
@@ -770,7 +765,7 @@ def ariabar(arr, self, app, num_cpus=16, verif=False):
         ariapath = ResolvePath("aria2c.exe")
         drive = str(arr[0][1])[:2]
         fp = Popen(
-            '{} --ca-certificate={} -i {} -d {} -x {} -j 100 -m 10 -V --disable-ipv6 -U {}/{}'.format(ariapath, certs,
+            '{} --ca-certificate={} -i {} -d {} -x {} -j 100 -m 10 -V --allow-overwrite --disable-ipv6 --async-dns=false -U {}/{}'.format(ariapath, certs,
                                                                                                       todl, drive,
                                                                                                       num_cpus,
                                                                                                       user_agent,
@@ -780,7 +775,7 @@ def ariabar(arr, self, app, num_cpus=16, verif=False):
     else:
         ariapath = ResolvePath("./aria2c")
         fp = Popen(
-            '{} --ca-certificate={} -i {} -d / -x {} -j 100 -m 10 -V --disable-ipv6 -U {}/{}'.format(ariapath, certs,
+            '{} --ca-certificate={} -i {} -d / -x {} -j 100 -m 10 -V --continue=true --allow-overwrite --disable-ipv6 -U {}/{}'.format(ariapath, certs,
                                                                                                      todl, num_cpus,
                                                                                                      user_agent,
                                                                                                      version),
@@ -805,11 +800,17 @@ def ariabar(arr, self, app, num_cpus=16, verif=False):
                     if not pygame.mixer.Channel(0).get_busy():
                         self.play(ResolvePath("toast.wav"), 0)
                 app.processEvents()
-            if "(OK):download completed" or '(ERR):error occurred' in l:
+            if "(OK):download completed" in l:
                 done = True
-            if "Exception" in l:
+            elif '(ERR):error occurred' in l:
+                done = True
+            elif 'No files to download.' in l:
+                done = True
+            elif "Exception" in l:
                 errs.append(l)
-            if "503" in l:
+                done = True
+            elif "status=503" in l:
+                errs.append(l)
                 done = True
     return errs
 
@@ -843,48 +844,19 @@ def ariabar_verif(iter, self, app, num_cpus=16):
         z += 1
     ariabar(todl_array, self, app, num_cpus)
 
-def fetch_latest_revision(url, verif):
+def fetch_latest_revision(url):
     r = httpx.get(url + "revisions/latest", headers={'user-agent': user_agent}, follow_redirects=True)
-    sig = httpx.get(url + "revisions/latest.sig", headers={'user-agent': user_agent}, follow_redirects=True)
-    latest_hash = SHA256.new(r.read())
-    try:
-        verif.verify(latest_hash, sig.read())
-    except:
-        errorMsg = QMessageBox()
-        errorMsg.setWindowTitle("Toast Meditation")
-        errorMsg.setText("Error: Revision Signature is invalid!\nThis means that there's some issue on the "
-                         "server, and it can't verify that the data hasn't been tampered with.\nCheck the "
-                         "troubleshooting channel's pins.")
-        errorMsg.exec_()
-        exit()
     return int(r.text)
 
 
-def fetch_revisions(url, first, last, verif):
+def fetch_revisions(url, first, last):
     revisions = []
     for x in range(first + 1, last + 1):
         if not (x < 0):
             rev = httpx.get(url + "revisions/" + str(x), headers={'user-agent': user_agent}, follow_redirects=True)
-            sig = httpx.get(url + "revisions/" + str(x) + ".sig", headers={'user-agent': user_agent},
-                            follow_redirects=True)
-            latest_hash = SHA256.new(rev.read())
-            try:
-                verif.verify(latest_hash, sig.read())
-            except:
-                errorMsg = QMessageBox()
-                errorMsg.setWindowTitle("Toast Meditation")
-                errorMsg.setText("Error: Revision Signature is invalid!\nThis means that there's some issue on the "
-                                 "server, and it can't verify that the data hasn't been tampered with.\nCheck the "
-                                 "troubleshooting channel's pins.")
-                errorMsg.exec_()
-                exit()
             revisions.append(json.loads(rev.text))
     return revisions
 
-
-def get_pub_key(url):
-    r = httpx.get(url + "/pubkey.pem", headers={'user-agent': user_agent}, follow_redirects=True)
-    return ECC.import_key(r.read())
 
 
 def existing_game_check(ui, MainWindow):
@@ -903,17 +875,8 @@ def existing_game_check(ui, MainWindow):
     ui.installed.setVisible(True)
     if ofpath != -1:
         sdk_download(ofpath.parents[1])
-        try:
-            verif = DSS.new(get_pub_key(default_url), 'fips-186-3', encoding='der')
-        except ValueError:
-            errorMsg = QMessageBox()
-            errorMsg.setWindowTitle("Toast Meditation")
-            errorMsg.setText(
-                "Error: No public key on server!\nThis means that a certain file is missing on the server that's needed to check that all the data hasn't been tampered with.\nCheck the troubleshooting channel.")
-            errorMsg.exec_()
-            exit()
         revision = get_installed_revision(ofpath)
-        latest = fetch_latest_revision(default_url, verif)
+        latest = fetch_latest_revision(default_url)
         if revision > 0:
             ui.installed.setText("Current Game Version: " + str(revision))
             ui.latest.setText("Latest Game Version: " + str(latest))
