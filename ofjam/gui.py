@@ -1,7 +1,7 @@
 import os
 from steam import *
 from sys import exit
-from pytoast import *
+from tvn import *
 import httpx
 import traceback
 import hashlib
@@ -746,6 +746,8 @@ def get_latest_ver(url):
 
 
 def ariabar(arr, self, app, num_cpus=16, verif=False):
+    if arr == []:
+        return []
     print(num_cpus)
     num_cpus = 16
     todl = ResolvePath("todl.txt")
@@ -765,7 +767,7 @@ def ariabar(arr, self, app, num_cpus=16, verif=False):
         ariapath = ResolvePath("aria2c.exe")
         drive = str(arr[0][1])[:2]
         fp = Popen(
-            '{} --ca-certificate={} -i {} -d {} -x {} -j 100 -m 10 -V --allow-overwrite --disable-ipv6 --async-dns=false -U {}/{}'.format(ariapath, certs,
+            '{} --ca-certificate={} -i {} -d {} -x {} -j 100 -m 10 -V --continue=true --allow-overwrite --disable-ipv6 --async-dns=false -U {}/{}'.format(ariapath, certs,
                                                                                                       todl, drive,
                                                                                                       num_cpus,
                                                                                                       user_agent,
@@ -822,7 +824,9 @@ def ariabar_verif(iter, self, app, num_cpus=16):
     z = 0
     self.progressBar.setMaximum(length)
     for arr in iter:
+        app.processEvents()
         if arr[1].exists():
+            app.processEvents()
             f = open(arr[1], "rb")
             fcontents = f.read()
             f.close()
