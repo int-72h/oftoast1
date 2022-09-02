@@ -767,7 +767,7 @@ def ariabar(arr, self, app, num_cpus=16, verif=False):
         ariapath = ResolvePath("aria2c.exe")
         drive = str(arr[0][1])[:2]
         fp = Popen(
-            '{} --ca-certificate={} -i {} -d {} -x {} -j 100 -m 10 -V --continue=true --allow-overwrite --disable-ipv6 --async-dns=false -U {}/{}'.format(ariapath, certs,
+            '\"{}\" --ca-certificate=\"{}\" -i \"{}\" -d {} -x {} -j 100 -m 10 -V --continue=true --allow-overwrite --disable-ipv6 --async-dns=false -U {}/{}'.format(ariapath, certs,
                                                                                                       todl, drive,
                                                                                                       num_cpus,
                                                                                                       user_agent,
@@ -777,7 +777,7 @@ def ariabar(arr, self, app, num_cpus=16, verif=False):
     else:
         ariapath = ResolvePath("./aria2c")
         fp = Popen(
-            '{} --ca-certificate={} -i {} -d / -x {} -j 100 -m 10 -V --continue=true --allow-overwrite --disable-ipv6 -U {}/{}'.format(ariapath, certs,
+            '\"{}\" --ca-certificate=\"{}\" -i \"{}\" -d / -x {} -j 100 -m 10 -V --continue=true --allow-overwrite --disable-ipv6 -U {}/{}'.format(ariapath, certs,
                                                                                                      todl, num_cpus,
                                                                                                      user_agent,
                                                                                                      version),
