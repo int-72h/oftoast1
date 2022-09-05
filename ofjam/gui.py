@@ -868,8 +868,11 @@ def fetch_revisions(url, first, last, verif):
             sig = httpx.get(url + "revisions/" + str(x) + ".sig", headers={'user-agent': user_agent},
                             follow_redirects=True)
             latest_hash = SHA256.new(rev.read())
+            rev_json = json.loads(rev.text)
             try:
                 verif.verify(latest_hash, sig.read())
+                if rev_json["revision"] != x:
+                    raise
             except:
                 errorMsg = QMessageBox()
                 errorMsg.setWindowTitle("Toast Meditation")
@@ -878,7 +881,7 @@ def fetch_revisions(url, first, last, verif):
                                  "troubleshooting channel's pins.")
                 errorMsg.exec_()
                 exit()
-            revisions.append(json.loads(rev.text))
+            revisions.append(rev_json["changes"])
     return revisions
 
 
